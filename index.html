@@ -555,7 +555,7 @@
             document.getElementById('mission-count-badge').innerText = `Доступно миссий: ${list.length}`;
         }
 
-     // --- ROULETTE SPINNING LOGIC (WITH EASE-OUT) ---
+    // --- ROULETTE SPINNING LOGIC ---
         function spinRoulette() {
             if (isSpinning) return;
 
@@ -568,14 +568,17 @@
 
             spinBtn.disabled = true;
             spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            let counter = 0;
+            const totalSwaps = 25;
+            const speed = 80;
+
             document.getElementById('mission-card').classList.add('hidden');
+
+            // Включаем CSS-анимацию перекатывания и размытия
             display.classList.add('roulette-spin');
 
-            let currentStep = 0;
-            const totalSteps = 22; // Количество смен карточек до остановки
-
-            // Рекурсивная функция для имитации затухания скорости (setTimeout вместо setInterval)
-            function step(currentDelay) {
+            const interval = setInterval(() => {
                 const randomTemp = list[Math.floor(Math.random() * list.length)];
                 
                 display.innerHTML = `
@@ -585,15 +588,11 @@
                     </div>
                 `;
 
-                currentStep++;
-
-                if (currentStep < totalSteps) {
-                    // Плавное увеличение задержки: с каждым шагом задержка становится больше (эффект торможения)
-                    // Коэффициент 1.15 подбирает крутизну замедления
-                    const nextDelay = currentDelay * 1.15;
-                    setTimeout(() => step(nextDelay), nextDelay);
-                } else {
-                    // Финальная остановка
+                counter++;
+                if (counter >= totalSwaps) {
+                    clearInterval(interval);
+                    
+                    // Выключаем анимацию движения
                     display.classList.remove('roulette-spin');
 
                     const finalMission = list[Math.floor(Math.random() * list.length)];
@@ -617,10 +616,7 @@
                         document.getElementById('mission-card').scrollIntoView({ behavior: 'smooth' });
                     }, 300);
                 }
-            }
-
-            // Запускаем первый шаг с начальной скоростью (в миллисекундах)
-            step(50);
+            }, speed);
         }
         
         function getRandomMissionDirectly() {
