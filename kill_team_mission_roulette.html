@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kill Team Mission Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f1115;
+            color: #e2e8f0;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .roulette-container {
+            perspective: 1000px;
+        }
+        .roulette-wheel {
+            transition: transform 3s cubic-bezier(0.15, 0.85, 0.35, 1.2);
+        }
+        .kt-border {
+            border: 2px solid #ea580c;
+        }
+        .kt-glow {
+            box-shadow: 0 0 15px rgba(234, 88, 12, 0.4);
+        }
+        .kt-glow-btn {
+            box-shadow: 0 0 20px rgba(234, 88, 12, 0.6);
+        }
+        .kt-glow-btn:hover {
+            box-shadow: 0 0 30px rgba(234, 88, 12, 0.9);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #181b20;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ea580c;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f97316;
+        }
+        .map-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8px;
+            fill: #71717a;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-zinc-900 border-b-2 border-orange-600 px-4 py-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-crosshairs text-orange-500 text-3xl animate-pulse"></i>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black font-orbitron text-white tracking-wider">KILL TEAM</h1>
+                    <p class="text-xs text-orange-400 font-semibold tracking-widest uppercase">Генератор Миссий & Рулетка</p>
+                </div>
+            </div>
+            <!-- Filter buttons -->
+            <div class="flex items-center bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition text-white bg-orange-600">Все (12)</button>
+                <button onclick="setFilter('basic')" id="filter-basic" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Базовые</button>
+                <button onclick="setFilter('advanced')" id="filter-advanced" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Продвинутые</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- Controls & Roulette Display -->
+        <section class="bg-zinc-900 rounded-xl p-6 mb-8 border border-zinc-800 kt-glow relative overflow-hidden text-center">
+            
+            <div class="mb-6">
+                <span id="mission-count-badge" class="inline-block bg-orange-950 text-orange-400 text-xs px-3 py-1 rounded-full border border-orange-800 font-mono mb-2">
+                    Доступно миссий: 12
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-bold font-orbitron text-white">ГОТОВ К БОЮ?</h2>
+                <p class="text-zinc-400 text-sm mt-1 max-w-lg mx-auto">
+                    Нажми кнопку ниже, чтобы запустить случайный выбор миссии. Каждая миссия содержит уникальную схему расстановки и правила.
+                </p>
+            </div>
+
+            <!-- Roulette Spinner Graphic / Text Box -->
+            <div class="relative max-w-md mx-auto my-6 bg-zinc-950 rounded-lg border-2 border-orange-600/50 p-6 shadow-inner min-h-[120px] flex items-center justify-center">
+                <div id="roulette-display" class="transition-all duration-300">
+                    <i class="fa-solid fa-dice text-4xl text-orange-500 mb-2 block"></i>
+                    <p class="text-zinc-400 font-orbitron text-sm">Нажми "КРУТИТЬ РУЛЕТКУ"</p>
+                </div>
+            </div>
+
+            <!-- Spin Button -->
+            <div class="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="spin-btn" onclick="spinRoulette()" class="w-full sm:w-auto px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-black font-orbitron text-lg tracking-wider rounded-lg transition-all duration-200 transform active:scale-95 kt-glow-btn flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-rotate text-xl"></i>
+                    КРУТИТЬ РУЛЕТКУ
+                </button>
+                <button onclick="getRandomMissionDirectly()" class="w-full sm:w-auto px-5 py-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold font-orbitron text-sm rounded-lg border border-zinc-700 transition">
+                    Быстрый выбор
+                </button>
+            </div>
+        </section>
+
+        <!-- Mission Details Container -->
+        <section id="mission-card" class="hidden transition-all duration-500">
+            <div class="bg-zinc-900 border-2 border-orange-600 rounded-xl overflow-hidden shadow-2xl">
+                
+                <!-- Mission Header -->
+                <div class="bg-gradient-to-r from-orange-950 via-zinc-900 to-zinc-900 p-6 border-b border-orange-600/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span id="mission-category" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-orange-600 text-white"></span>
+                            <span id="mission-type" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700"></span>
+                        </div>
+                        <h2 id="mission-title" class="text-2xl sm:text-3xl font-black font-orbitron text-white"></h2>
+                        <p id="mission-subtitle" class="text-orange-400 text-sm font-medium mt-0.5"></p>
+                    </div>
+                    <div class="flex items-center gap-2 mt-4 md:mt-0">
+                        <button onclick="scrollUpToSpin()" class="bg-zinc-800 hover:bg-zinc-700 text-orange-400 px-4 py-2 rounded-lg text-sm font-bold font-orbitron border border-zinc-700 transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrows-rotate"></i> Перекрутить
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mission Body Grid -->
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <!-- Left Column: SVG Map & Deployment Info -->
+                    <div class="lg:col-span-5 flex flex-col gap-6">
+                        
+                        <!-- Deployment Visual SVG Map -->
+                        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-xs font-bold font-orbitron text-zinc-400 tracking-wider uppercase flex items-center gap-2">
+                                    <i class="fa-solid fa-map text-orange-500"></i> Карта стола
+                                </h3>
+                                <span class="text-[10px] text-zinc-500 font-mono">1 Клетка = 2 дюйма</span>
+                            </div>
+                            
+                            <!-- SVG Map Canvas Container -->
+                            <div id="svg-map-container" class="w-full aspect-[30/22] bg-zinc-900 rounded border border-zinc-800 overflow-hidden relative shadow-inner">
+                                <!-- SVG generated by JS -->
+                            </div>
+
+                            <div class="mt-3 flex items-center justify-around text-[11px] text-zinc-400 border-t border-zinc-800/80 pt-2 font-mono flex-wrap gap-2">
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-blue-600 inline-block"></span> Игрок А</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-600 inline-block"></span> Игрок Б</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Точки (VP)</span>
+                            </div>
+                        </div>
+
+                        <!-- Deployment Details Card -->
+                        <div class="bg-zinc-950/60 p-4 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-sm font-bold font-orbitron text-orange-400 flex items-center gap-2">
+                                <i class="fa-solid fa-location-crosshairs"></i> Зоны Высадки (Drop Zones)
+                            </h3>
+                            <div id="deployment-text" class="text-xs sm:text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Mission Mechanics, Rules & Objectives -->
+                    <div class="lg:col-span-7 flex flex-col gap-6">
+                        
+                        <!-- Objective & Scoring Block -->
+                        <div class="bg-zinc-950/80 p-5 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-base font-bold font-orbitron text-white flex items-center gap-2 border-b border-zinc-800 pb-2">
+                                <i class="fa-solid fa-trophy text-amber-500"></i> Как получать Победные Очки (VP)
+                            </h3>
+                            <div id="scoring-text" class="text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                        <!-- Special Rules / AP Actions Block -->
+                        <div class="bg-zinc-950/80 p-5 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-base font-bold font-orbitron text-white flex items-center gap-2 border-b border-zinc-800 pb-2">
+                                <i class="fa-solid fa-bolt text-orange-500"></i> Особые Действия и Механика
+                            </h3>
+                            <div id="mechanics-text" class="text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                        <!-- Why It Prevents Quick Matches (2-Turn Protection) -->
+                        <div class="bg-orange-950/30 border border-orange-900/50 p-4 rounded-xl space-y-2">
+                            <h4 class="text-xs font-bold font-orbitron text-orange-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved"></i> Темп игры
+                            </h4>
+                            <p id="pace-text" class="text-xs text-zinc-300 leading-relaxed">
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- All Missions Grid List -->
+        <section class="mt-12">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold font-orbitron text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-orange-500"></i> Все миссии в базе
+                </h3>
+                <span class="text-xs text-zinc-500 hidden sm:inline">Кликни на миссию для ручного выбора</span>
+            </div>
+
+            <div id="missions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-zinc-950 border-t border-zinc-800 py-6 text-center text-xs text-zinc-500">
+        <div class="max-w-5xl mx-auto px-4">
+            <p class="font-orbitron text-zinc-400 mb-1">KILL TEAM MISSION GENERATOR</p>
+            <p>Универсально для любых фракций • Только горизонтальный геймплей • Не требует кубиков</p>
+        </div>
+    </footer>
+
+    <!-- Script Block -->
+    <script>
+        // --- MISSIONS DATABASE (12 Missions - No Verticality) ---
+        const missions = [
+            {
+                id: 'm1',
+                title: 'Диагональный Перехват',
+                subtitle: 'Угловая высадка на максимальном отдалении от противника',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Диагональная',
+                deployment: `
+                    <p><strong>Игрок А:</strong> Верхний ЛЕВЫЙ угол стола. Треугольная зона высадки 10" по длинному краю и 10" по короткому.</p>
+                    <p><strong>Игрок Б:</strong> Нижний ПРАВЫЙ угол стола. Треугольная зона 10" x 10".</p>
+                    <p><strong>Дистанция между зонами:</strong> ~25 дюймов. Прямой прострел на первом ходу исключен.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>4 Точки:</strong> Расставлены по центральной диагонали.</li>
+                        <li><strong>1 VP:</strong> За каждый активный узел в конце раунда (начиная со 2-го).</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Действие - Взлом узла (1 AP):</strong> Точка не дает очки просто за присутствие. Боец должен встать в 1" от точки и потратить 1 AP на взлом. После этого точка считается вашей, пока враг не перехватит её.</p>
+                `,
+                pace: 'Благодаря диагональной расстановке первый раунд полностью уходит на подтягивание сил и маневры за стенами.'
+            },
+            {
+                id: 'm2',
+                title: 'Глубокий Прорыв',
+                subtitle: 'Узкий фронт с коротких краев стола',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Короткий Край',
+                deployment: `
+                    <p><strong>Игрок А:</strong> Левый короткий край (22"). Полоса шириной <strong>6 дюймов</strong>.</p>
+                    <p><strong>Игрок Б:</strong> Правый короткий край (22"). Полоса шириной <strong>6 дюймов</strong>.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> Контроль хотя бы 1 точки на своей половине поля.</li>
+                        <li><strong>1 VP:</strong> Контроль хотя бы 1 точки на чужой половине поля.</li>
+                        <li><strong>2 VP:</strong> За контроль обеих точек на вражеской половине поля.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>Стол мысленно делится пополам. В каждом квадранте располагается по 1 точке. Очки за точки начисляются в конце 2, 3 и 4 раундов.</p>
+                `,
+                pace: 'Чтобы забрать максимум очков, игрокам нужно двигаться вперед на чужую территорию по узкому коридору.'
+            },
+            {
+                id: 'm3',
+                title: 'Загрузка Данных',
+                subtitle: 'Миссия с отложенным получением очков',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Фронтальная',
+                deployment: `
+                    <p><strong>Игрок А & Б:</strong> Стандартные полосы по 6 дюймов вдоль длинных краев.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 Раунд:</strong> Точки НЕ дают победных очков!</li>
+                        <li><strong>2, 3, 4 Раунды:</strong> По 1 VP за каждый взломанный терминал.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Скачивание данных (1 AP):</strong> Боец должен потратить 1 AP рядом с терминалом. Если противник выбивает вас с терминала, ему не нужно тратить AP — точка становится его автоматически.</p>
+                `,
+                pace: 'Отсутствие очков в первом раунде позволяет спокойно выстроить линию фронта и взломать консоли перед основной перестрелкой.'
+            },
+            {
+                id: 'm4',
+                title: 'Захват Ценных Грузов',
+                subtitle: 'Перенос тяжелых контейнеров с дебаффами',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Фронтальная',
+                deployment: `
+                    <p><strong>Игрок А & Б:</strong> Противоположные длинные края стола (6 дюймов).</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> За удержание ящика в руках на конец раунда.</li>
+                        <li><strong>3 VP:</strong> За донос ящика в свою зону высадки и сброс (действие <i>Drop</i> за 1 AP).</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Подобрать груз (1 AP):</strong> Боец подбирает 1 из 3 ящиков в центре.</p>
+                    <p><strong>Штраф веса:</strong> Несущий груз боец теряет 2" от Move и Charge, а также <strong>НЕ может делать Dash</strong>.</p>
+                `,
+                pace: 'Механика эскорта. Тот, кто тащит ящик, становится медленным и легкой мишенью. Придется защищать его телами союзников.'
+            },
+            {
+                id: 'm5',
+                title: 'Сдвиг Зоны',
+                subtitle: 'Динамически меняющиеся активности',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Фронтальная',
+                deployment: `
+                    <p><strong>Игрок А & Б:</strong> Стандартные длинные зоны (по 6 дюймов).</p>
+                    <p>5 точек: 2 ближе к А, 1 в Центре, 2 ближе к Б.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>Раунд 1:</strong> Работают только 4 крайние точки (по 1 VP).</li>
+                        <li><strong>Раунд 2:</strong> Работает ТОЛЬКО Центральная точка (2 VP).</li>
+                        <li><strong>Раунд 3:</strong> Работают точки ВО ВРАЖЕСКОЙ зоне (по 2 VP).</li>
+                        <li><strong>Раунд 4:</strong> Работают ВСЕ точки (по 1 VP).</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>Захватывать неактивные точки в текущем раунде бессмысленно. Вы должны постоянно перемещаться в нужный сектор.</p>
+                `,
+                pace: 'Кемперить на базе не выйдет. Нужно планировать маневры так, чтобы к следующему ходу оказаться у новой активной точки.'
+            },
+            {
+                id: 'm6',
+                title: 'Штурм Бункера',
+                subtitle: 'Узкие зоны и огромное препятствие по центру',
+                category: 'basic',
+                categoryName: 'Базовая',
+                type: 'Узкая Фронтальная',
+                deployment: `
+                    <p><strong>Игрок А & Б:</strong> Узкие зоны всего <strong>4 дюйма</strong> вдоль длинных краев.</p>
+                    <p>Обязательное условие: Крупное здание/бункер прямо в центре стола без прострела насквозь.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> За контроль точек на флангах снаружи бункера.</li>
+                        <li><strong>2 VP:</strong> За контроль центральной консоли внутри бункера.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>Прямой видимости с базы на базу нет. Захват центральной точки требует входа в замкнутое помещение для ближнего боя.</p>
+                `,
+                pace: 'Глухой центральный террейн полностью исключает уничтожение отрядов стрельбой. Ближний бой неизбежен.'
+            },
+            {
+                id: 'm7',
+                title: 'Контроль Линий',
+                subtitle: 'Классический захват и удержание 4 точек',
+                category: 'basic',
+                categoryName: 'Базовая',
+                type: 'Фронтальная',
+                deployment: `
+                    <p><strong>Игрок А & Б:</strong> Противоположные длинные края стола (6 дюймов).</p>
+                    <p>4 точки расставляются ромбом.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> Контроль 1 или более точек в конце раунда.</li>
+                        <li><strong>1 VP:</strong> Контроль БОЛЬШЕГО количества точек, чем у противника.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>Контроль определяется по количеству моделей (сумме их APL) в пределах 2" от маркёра.</p>
+                `,
+                pace: 'Идеальный баланс позиционной перестрелки. Хорошо подходит для освоения основ игры.'
+            },
+            {
+                id: 'm8',
+                title: 'Царь Горы',
+                subtitle: 'Бескомпромиссная битва за центр',
+                category: 'basic',
+                categoryName: 'Базовая',
+                type: 'Фронтальная',
+                deployment: `
+                    <p><strong>Игрок А & Б:</strong> Противоположные края стола (6 дюймов).</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>2 VP:</strong> Игроку, контролирующему единственную центральную точку в конце раунда.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>На столе всего одна точка строго в геометрическом центре. Вся стрельба и чарджи будут направлены туда.</p>
+                `,
+                pace: 'Максимально агрессивный и быстрый формат. Кто лучше использует укрытия вокруг точки — тот и победит.'
+            },
+            // --- NEW REPLACEMENT FOR VERTICAL MISSION ---
+            {
+                id: 'm9',
+                title: 'Поля Глушения',
+                subtitle: 'Точки работают как анти-снайперские генераторы помех',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Шахматная',
+                deployment: `
+                    <p><strong>Игрок А:</strong> Два квадрата 8x8 дюймов в Левом-Верхнем и Правом-Нижнем углах стола.</p>
+                    <p><strong>Игрок Б:</strong> Два квадрата 8x8 дюймов в Правом-Верхнем и Левом-Нижнем углах стола.</p>
+                    <p>Ваши отряды изначально разделены на две группы (Перекрестный огонь).</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> За контроль каждой точки (Генератора) в конце раунда.</li>
+                        <li><strong>1 VP (Бонус):</strong> Если вы контролируете больше Генераторов, чем противник.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Аура Глушения (Пассивно):</strong> Любой боец, находящийся в пределах 2" от ЛЮБОЙ точки, получает защиту от дальних атак. Враг <strong>НЕ МОЖЕТ</strong> стрелять по этому бойцу, если сам стрелок находится дальше 6 дюймов от него. Оружие со свойством <i>Blast</i> и <i>Indirect</i> игнорирует это правило.</p>
+                `,
+                pace: 'Стрельба через весь стол полностью отключается. Выживут только те, кто не боится подходить вплотную (на расстояние 6 дюймов) или врываться в рукопашную.'
+            },
+            {
+                id: 'm10',
+                title: 'Асимметричный Саботаж',
+                subtitle: 'Один в центре защищает, другой нападает с углов',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Асимметричная',
+                deployment: `
+                    <p><strong>ЗАЩИТНИК (Игрок А):</strong> Квадрат 10x10 дюймов строго в центре стола.</p>
+                    <p><strong>АТАКУЮЩИЙ (Игрок Б):</strong> Два противоположных угла стола (треугольники 8x8 дюймов). Отряд можно разделить на две части.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>ЗАЩИТНИК:</strong> Получает 1 VP в конце раунда за каждый НЕУНИЧТОЖЕННЫЙ генератор (их 3).</li>
+                        <li><strong>АТАКУЮЩИЙ:</strong> Получает сразу 3 VP за каждый уничтоженный генератор.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Установка Бомбы (1 AP):</strong> Атакующий может установить заряд на генератор (в 1"). Заряд взрывается в конце СЛЕДУЮЩЕГО раунда.</p>
+                    <p><strong>Обезвреживание (1 AP):</strong> Защитник может потратить AP, чтобы снять заряд до взрыва.</p>
+                `,
+                pace: 'Очень напряженный триллер. Защитнику приходится крутиться во все стороны, а атакующему — координировать одновременный штурм с двух флангов.'
+            },
+            {
+                id: 'm11',
+                title: 'Токсичный Шторм',
+                subtitle: 'Сужающаяся зона и смертельный урон по краям',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Смертельная Зона',
+                deployment: `
+                    <p><strong>Игрок А & Б:</strong> Стандартные длинные зоны (по 6 дюймов).</p>
+                    <p>4 точки сгруппированы очень близко к центру стола.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> За контроль любой точки.</li>
+                        <li><strong>1 VP:</strong> Если контролируете больше точек, чем оппонент.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Сужение зоны:</strong> В конце Раунда 2, любой боец находящийся ближе 3" от ЛЮБОГО края стола, получает D3 смертельных ран. Во время Раундов 3 и 4 эта зона смерти расширяется до 6" от краев.</p>
+                `,
+                pace: 'Классическая механика "Королевской битвы". К третьему раунду все выжившие бойцы будут вынуждены столпиться в центре стола на дистанции ближнего боя.'
+            },
+            {
+                id: 'm12',
+                title: 'Изменчивый Фронт',
+                subtitle: 'Случайная активация точек интереса каждый ход',
+                category: 'advanced',
+                categoryName: 'Продвинутая',
+                type: 'Диагональная',
+                deployment: `
+                    <p><strong>Игрок А & Б:</strong> Диагональная расстановка (углы 10x10 дюймов).</p>
+                    <p>На столе расставляются <strong>6 пронумерованных точек</strong> (от 1 до 6).</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>2 VP:</strong> За контроль активной в этом раунде точки.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Блуждающий сигнал:</strong> В начале КАЖДОГО раунда бросайте кубик D6 ДВАЖДЫ. Выпавшие номера — это единственные две точки, которые будут приносить очки в этом раунде. Остальные 4 точки становятся неактивными пустышками до следующего броска.</p>
+                `,
+                pace: 'Полный хаос. Невозможно сидеть в глухой обороне, так как нужная точка может активироваться на другом конце стола. Требует максимальной гибкости отряда.'
+            }
+        ];
+
+        // --- STATE VARIABLES ---
+        let currentFilter = 'all';
+        let isSpinning = false;
+        let selectedMission = null;
+
+        // --- FILTER LOGIC ---
+        function setFilter(filter) {
+            if (isSpinning) return;
+            currentFilter = filter;
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-orange-600', 'text-white');
+                btn.classList.add('text-zinc-400');
+            });
+            
+            const activeBtn = document.getElementById(`filter-${filter}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-orange-600', 'text-white');
+                activeBtn.classList.remove('text-zinc-400');
+            }
+
+            updateMissionCountBadge();
+            renderMissionsGrid();
+        }
+
+        function getFilteredMissions() {
+            if (currentFilter === 'all') return missions;
+            return missions.filter(m => m.category === currentFilter);
+        }
+
+        function updateMissionCountBadge() {
+            const list = getFilteredMissions();
+            document.getElementById('mission-count-badge').innerText = `Доступно миссий: ${list.length}`;
+        }
+
+        // --- ROULETTE SPINNING LOGIC ---
+        function spinRoulette() {
+            if (isSpinning) return;
+
+            const list = getFilteredMissions();
+            if (list.length === 0) return;
+
+            isSpinning = true;
+            const spinBtn = document.getElementById('spin-btn');
+            const display = document.getElementById('roulette-display');
+
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            let counter = 0;
+            const totalSwaps = 25;
+            const speed = 80;
+
+            document.getElementById('mission-card').classList.add('hidden');
+
+            const interval = setInterval(() => {
+                const randomTemp = list[Math.floor(Math.random() * list.length)];
+                
+                display.innerHTML = `
+                    <div class="animate-bounce">
+                        <span class="text-xs text-orange-500 font-bold uppercase tracking-widest">${randomTemp.type}</span>
+                        <h3 class="text-xl font-black font-orbitron text-white">${randomTemp.title}</h3>
+                    </div>
+                `;
+
+                counter++;
+                if (counter >= totalSwaps) {
+                    clearInterval(interval);
+                    
+                    const finalMission = list[Math.floor(Math.random() * list.length)];
+                    selectedMission = finalMission;
+
+                    display.innerHTML = `
+                        <div class="scale-105 transition-transform">
+                            <span class="text-xs bg-orange-600 text-white font-bold px-2 py-0.5 rounded uppercase tracking-widest">${finalMission.categoryName}</span>
+                            <h3 class="text-2xl font-black font-orbitron text-orange-400 mt-1">${finalMission.title}</h3>
+                            <p class="text-xs text-zinc-400 mt-1">${finalMission.subtitle}</p>
+                        </div>
+                    `;
+
+                    renderMissionDetails(finalMission);
+
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                    setTimeout(() => {
+                        document.getElementById('mission-card').scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
+                }
+            }, speed);
+        }
+
+        function getRandomMissionDirectly() {
+            if (isSpinning) return;
+            const list = getFilteredMissions();
+            const finalMission = list[Math.floor(Math.random() * list.length)];
+            selectedMission = finalMission;
+            
+            document.getElementById('roulette-display').innerHTML = `
+                <div>
+                    <span class="text-xs bg-orange-600 text-white font-bold px-2 py-0.5 rounded uppercase tracking-widest">${finalMission.categoryName}</span>
+                    <h3 class="text-2xl font-black font-orbitron text-orange-400 mt-1">${finalMission.title}</h3>
+                    <p class="text-xs text-zinc-400 mt-1">${finalMission.subtitle}</p>
+                </div>
+            `;
+            renderMissionDetails(finalMission);
+            document.getElementById('mission-card').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function selectMissionById(id) {
+            const m = missions.find(x => x.id === id);
+            if (m) {
+                selectedMission = m;
+                document.getElementById('roulette-display').innerHTML = `
+                    <div>
+                        <span class="text-xs bg-orange-600 text-white font-bold px-2 py-0.5 rounded uppercase tracking-widest">${m.categoryName}</span>
+                        <h3 class="text-2xl font-black font-orbitron text-orange-400 mt-1">${m.title}</h3>
+                        <p class="text-xs text-zinc-400 mt-1">${m.subtitle}</p>
+                    </div>
+                `;
+                renderMissionDetails(m);
+                document.getElementById('mission-card').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function scrollUpToSpin() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- RENDER MISSION DETAILS ---
+        function renderMissionDetails(m) {
+            document.getElementById('mission-title').innerText = m.title;
+            document.getElementById('mission-subtitle').innerText = m.subtitle;
+            document.getElementById('mission-category').innerText = m.categoryName;
+            document.getElementById('mission-type').innerText = m.type + ' РАССТАНОВКА';
+            
+            document.getElementById('deployment-text').innerHTML = m.deployment;
+            document.getElementById('scoring-text').innerHTML = m.scoring;
+            document.getElementById('mechanics-text').innerHTML = m.mechanics;
+            document.getElementById('pace-text').innerText = m.pace;
+
+            // Render exact SVG for this mission
+            renderSvgMap(m.id);
+
+            document.getElementById('mission-card').classList.remove('hidden');
+        }
+
+        // --- GENERATE EXACT SVG MAPS FOR EACH MISSION ---
+        function renderSvgMap(missionId) {
+            const container = document.getElementById('svg-map-container');
+            
+            // Common Grid and border measurements
+            const grid = `
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#27272a" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                <text x="150" y="10" class="map-label" text-anchor="middle">30 ДЮЙМОВ (ДЛИННАЯ СТОРОНА)</text>
+                <text x="-110" y="10" class="map-label" transform="rotate(-90)" text-anchor="middle">22 ДЮЙМА</text>
+            `;
+
+            let innerSvg = '';
+
+            switch (missionId) {
+                case 'm1': // Диагональный
+                    innerSvg = `
+                        <polygon points="0,0 100,0 0,100" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="25" y="35" fill="#93c5fd" font-size="10" font-weight="bold">Игрок А</text>
+                        <polygon points="300,220 200,220 300,120" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="240" y="195" fill="#fca5a5" font-size="10" font-weight="bold">Игрок Б</text>
+                        <circle cx="70" cy="150" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="123" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="177" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="230" cy="70" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm2': // Короткий Край
+                    innerSvg = `
+                        <rect x="0" y="0" width="60" height="220" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="30" y="115" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle" transform="rotate(-90 30,115)">Игрок А (6")</text>
+                        <rect x="240" y="0" width="60" height="220" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="270" y="115" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle" transform="rotate(-90 270,115)">Игрок Б (6")</text>
+                        <line x1="150" y1="0" x2="150" y2="220" stroke="#f59e0b" stroke-dasharray="4" opacity="0.3" stroke-width="1"/>
+                        <circle cx="100" cy="60" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="100" cy="160" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="200" cy="60" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="200" cy="160" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm3': // Загрузка Данных
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Игрок А (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Игрок Б (6")</text>
+                        <circle cx="100" cy="90" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="200" cy="90" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="100" cy="130" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="200" cy="130" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm4': // Ценные Грузы
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Игрок А (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Игрок Б (6")</text>
+                        <line x1="0" y1="110" x2="300" y2="110" stroke="#f59e0b" stroke-dasharray="4" opacity="0.3" stroke-width="1"/>
+                        <rect x="70" y="105" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="145" y="105" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="220" y="105" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm5': // Сдвиг Зоны
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Игрок А (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Игрок Б (6")</text>
+                        <circle cx="90" cy="80" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="210" cy="80" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="110" r="9" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+                        <circle cx="90" cy="140" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="210" cy="140" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm6': // Штурм Бункера
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="40" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="25" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Игрок А (Узкая 4")</text>
+                        <rect x="0" y="180" width="300" height="40" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="205" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Игрок Б (Узкая 4")</text>
+                        <rect x="110" y="70" width="80" height="80" fill="#27272a" stroke="#52525b" stroke-width="2" rx="4"/>
+                        <text x="150" y="105" fill="#71717a" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle">БУНКЕР</text>
+                        <circle cx="60" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="125" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="240" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm7': // Контроль Линий
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Игрок А (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Игрок Б (6")</text>
+                        <circle cx="90" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="75" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="145" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="210" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm8': // Царь Горы
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Игрок А (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Игрок Б (6")</text>
+                        <circle cx="150" cy="110" r="10" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+                        <circle cx="150" cy="110" r="4" fill="#fff" />
+                    `;
+                    break;
+                case 'm9': // Поля Глушения (Шахматная)
+                    innerSvg = `
+                        <!-- Player A: Top-Left & Bottom-Right -->
+                        <rect x="0" y="0" width="80" height="80" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="40" y="45" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">А</text>
+                        <rect x="220" y="140" width="80" height="80" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="260" y="185" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">А</text>
+                        
+                        <!-- Player B: Top-Right & Bottom-Left -->
+                        <rect x="220" y="0" width="80" height="80" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="260" y="45" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Б</text>
+                        <rect x="0" y="140" width="80" height="80" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="40" y="185" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Б</text>
+
+                        <!-- Points forming a cross in the center -->
+                        <circle cx="150" cy="70" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="150" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="110" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="190" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        
+                        <!-- Jamming Radius indicators (dotted circles) -->
+                        <circle cx="150" cy="70" r="25" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+                        <circle cx="150" cy="150" r="25" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+                        <circle cx="110" cy="110" r="25" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+                        <circle cx="190" cy="110" r="25" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+                    `;
+                    break;
+                case 'm10': // Асимметричный Саботаж
+                    innerSvg = `
+                        <!-- Defender Box in Center -->
+                        <rect x="100" y="60" width="100" height="100" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="115" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">ЗАЩИТНИК</text>
+                        
+                        <!-- Attacker Corners -->
+                        <polygon points="0,0 80,0 0,80" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="25" y="25" fill="#fca5a5" font-size="9" font-weight="bold">АТАКА</text>
+                        <polygon points="300,220 220,220 300,140" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="255" y="200" fill="#fca5a5" font-size="9" font-weight="bold">АТАКА</text>
+
+                        <!-- Generators (Objectives) in Defender box -->
+                        <rect x="115" y="75" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="175" y="75" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="145" y="135" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm11': // Токсичный Шторм
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Игрок А (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Игрок Б (6")</text>
+                        
+                        <!-- Death Zone Warning Border -->
+                        <rect x="30" y="30" width="240" height="160" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="8 4"/>
+                        <text x="150" y="55" fill="#ef4444" font-size="9" font-weight="bold" text-anchor="middle">СМЕРТЕЛЬНАЯ ЗОНА (от 3-го хода)</text>
+
+                        <!-- Points clumped in center -->
+                        <circle cx="130" cy="95" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="170" cy="95" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="130" cy="125" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="170" cy="125" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm12': // Изменчивый Фронт (Рандом)
+                    innerSvg = `
+                        <polygon points="0,0 100,0 0,100" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="25" y="35" fill="#93c5fd" font-size="10" font-weight="bold">Игрок А</text>
+                        <polygon points="300,220 200,220 300,120" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="240" y="195" fill="#fca5a5" font-size="10" font-weight="bold">Игрок Б</text>
+                        
+                        <!-- 6 Numbered Objectives scattered -->
+                        <circle cx="80" cy="170" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="80" y="173" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">1</text>
+                        
+                        <circle cx="70" cy="70" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="70" y="73" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">2</text>
+                        
+                        <circle cx="150" cy="110" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="150" y="113" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">3</text>
+                        
+                        <circle cx="230" cy="150" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="230" y="153" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">4</text>
+                        
+                        <circle cx="220" cy="50" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="220" y="53" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">5</text>
+                        
+                        <circle cx="150" cy="30" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="150" y="33" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">6</text>
+                    `;
+                    break;
+            }
+
+            container.innerHTML = `<svg viewBox="0 0 300 220" class="w-full h-full">${grid}${innerSvg}</svg>`;
+        }
+
+        // --- RENDER ALL MISSIONS LIST ---
+        function renderMissionsGrid() {
+            const grid = document.getElementById('missions-grid');
+            const list = getFilteredMissions();
+
+            grid.innerHTML = list.map(m => `
+                <div onclick="selectMissionById('${m.id}')" class="bg-zinc-900 border border-zinc-800 hover:border-orange-500 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:-translate-y-1 group flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${m.category === 'advanced' ? 'bg-orange-950 text-orange-400 border border-orange-800' : 'bg-zinc-800 text-zinc-300'}">
+                            ${m.categoryName}
+                        </span>
+                        <span class="text-[10px] text-zinc-500 font-mono">${m.type}</span>
+                    </div>
+                    <h4 class="text-base font-bold font-orbitron text-white group-hover:text-orange-400 transition">${m.title}</h4>
+                    <p class="text-xs text-zinc-400 mt-1 flex-grow">${m.subtitle}</p>
+                </div>
+            `).join('');
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            updateMissionCountBadge();
+            renderMissionsGrid();
+        };
+    </script>
+</body>
+</html>
