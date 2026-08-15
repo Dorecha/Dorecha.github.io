@@ -58,6 +58,18 @@
             font-weight: bold;
             letter-spacing: 1px;
         }
+        /* Класс, который JS будет добавлять на время кручения рулетки */
+        .roulette-spin {
+    animation: rollDown 0.1s linear infinite;
+    filter: blur(1px); /* Легкое размытие в движении */
+        }
+
+/* Сама анимация перекатывания сверху вниз */
+        @keyframes rollDown {
+    0% { transform: translateY(-40%); opacity: 0; }
+    50% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(40%); opacity: 0; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
@@ -543,7 +555,7 @@
             document.getElementById('mission-count-badge').innerText = `Доступно миссий: ${list.length}`;
         }
 
-        // --- ROULETTE SPINNING LOGIC ---
+      // --- ROULETTE SPINNING LOGIC ---
         function spinRoulette() {
             if (isSpinning) return;
 
@@ -563,11 +575,14 @@
 
             document.getElementById('mission-card').classList.add('hidden');
 
+            // Включаем CSS-анимацию перекатывания и размытия
+            display.classList.add('roulette-spin');
+
             const interval = setInterval(() => {
                 const randomTemp = list[Math.floor(Math.random() * list.length)];
                 
                 display.innerHTML = `
-                    <div class="animate-bounce">
+                    <div>
                         <span class="text-xs text-orange-500 font-bold uppercase tracking-widest">${randomTemp.type}</span>
                         <h3 class="text-xl font-black font-orbitron text-white">${randomTemp.title}</h3>
                     </div>
@@ -577,6 +592,9 @@
                 if (counter >= totalSwaps) {
                     clearInterval(interval);
                     
+                    // Выключаем анимацию движения
+                    display.classList.remove('roulette-spin');
+
                     const finalMission = list[Math.floor(Math.random() * list.length)];
                     selectedMission = finalMission;
 
