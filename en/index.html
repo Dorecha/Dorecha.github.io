@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kill Team Mission Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f1115;
+            color: #e2e8f0;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .roulette-container {
+            perspective: 1000px;
+        }
+        .roulette-wheel {
+            transition: transform 3s cubic-bezier(0.15, 0.85, 0.35, 1.2);
+        }
+        .kt-border {
+            border: 2px solid #ea580c;
+        }
+        .kt-glow {
+            box-shadow: 0 0 15px rgba(234, 88, 12, 0.4);
+        }
+        .kt-glow-btn {
+            box-shadow: 0 0 20px rgba(234, 88, 12, 0.6);
+        }
+        .kt-glow-btn:hover {
+            box-shadow: 0 0 30px rgba(234, 88, 12, 0.9);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #181b20;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ea580c;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f97316;
+        }
+        .map-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8px;
+            fill: #71717a;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .roulette-spin {
+            animation: rollDown 0.1s linear infinite;
+            filter: blur(1px);
+        }
+        @keyframes rollDown {
+            0% { transform: translateY(-40%); opacity: 0; }
+            50% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(40%); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-zinc-900 border-b-2 border-orange-600 px-4 py-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-crosshairs text-orange-500 text-3xl animate-pulse"></i>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black font-orbitron text-white tracking-wider">KILL TEAM</h1>
+                    <p class="text-xs text-orange-400 font-semibold tracking-widest uppercase">Mission Generator</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+                <!-- Filter buttons -->
+                <div class="flex items-center bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                    <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition text-white bg-orange-600">All (12)</button>
+                    <button onclick="setFilter('basic')" id="filter-basic" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Basic</button>
+                    <button onclick="setFilter('advanced')" id="filter-advanced" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Advanced</button>
+                </div>
+
+                <!-- Language Switcher -->
+                <div class="flex items-center bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                    <a href="index.html" class="px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">RU</a>
+                    <a href="en.html" class="px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition text-white bg-orange-600 pointer-events-none">EN</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- Controls & Roulette Display -->
+        <section class="bg-zinc-900 rounded-xl p-6 mb-8 border border-zinc-800 kt-glow relative overflow-hidden text-center">
+            
+            <div class="mb-6">
+                <span id="mission-count-badge" class="inline-block bg-orange-950 text-orange-400 text-xs px-3 py-1 rounded-full border border-orange-800 font-mono mb-2">
+                    Available missions: 12
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-bold font-orbitron text-white">READY TO DEPLOY?</h2>
+                <p class="text-zinc-400 text-sm mt-1 max-w-lg mx-auto">
+                    Click the button below to start the random mission selection. Each mission features a unique deployment map and special rules.
+                </p>
+            </div>
+
+            <!-- Roulette Spinner Graphic / Text Box -->
+            <div class="relative max-w-md mx-auto my-6 bg-zinc-950 rounded-lg border-2 border-orange-600/50 p-6 shadow-inner min-h-[120px] flex items-center justify-center">
+                <div id="roulette-display" class="transition-all duration-300">
+                    <i class="fa-solid fa-dice text-4xl text-orange-500 mb-2 block"></i>
+                    <p class="text-zinc-400 font-orbitron text-sm">Click "SPIN THE ROULETTE"</p>
+                </div>
+            </div>
+
+            <!-- Spin Button -->
+            <div class="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="spin-btn" onclick="spinRoulette()" class="w-full sm:w-auto px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-black font-orbitron text-lg tracking-wider rounded-lg transition-all duration-200 transform active:scale-95 kt-glow-btn flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-rotate text-xl"></i>
+                    SPIN THE ROULETTE
+                </button>
+                <button onclick="getRandomMissionDirectly()" class="w-full sm:w-auto px-5 py-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold font-orbitron text-sm rounded-lg border border-zinc-700 transition">
+                    Quick Pick
+                </button>
+            </div>
+        </section>
+
+        <!-- Mission Details Container -->
+        <section id="mission-card" class="hidden transition-all duration-500">
+            <div class="bg-zinc-900 border-2 border-orange-600 rounded-xl overflow-hidden shadow-2xl">
+                
+                <!-- Mission Header -->
+                <div class="bg-gradient-to-r from-orange-950 via-zinc-900 to-zinc-900 p-6 border-b border-orange-600/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span id="mission-category" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-orange-600 text-white"></span>
+                            <span id="mission-type" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700"></span>
+                        </div>
+                        <h2 id="mission-title" class="text-2xl sm:text-3xl font-black font-orbitron text-white"></h2>
+                        <p id="mission-subtitle" class="text-orange-400 text-sm font-medium mt-0.5"></p>
+                    </div>
+                    <div class="flex items-center gap-2 mt-4 md:mt-0">
+                        <button onclick="scrollUpToSpin()" class="bg-zinc-800 hover:bg-zinc-700 text-orange-400 px-4 py-2 rounded-lg text-sm font-bold font-orbitron border border-zinc-700 transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrows-rotate"></i> Respin
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mission Body Grid -->
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <!-- Left Column: SVG Map & Deployment Info -->
+                    <div class="lg:col-span-5 flex flex-col gap-6">
+                        
+                        <!-- Deployment Visual SVG Map -->
+                        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-xs font-bold font-orbitron text-zinc-400 tracking-wider uppercase flex items-center gap-2">
+                                    <i class="fa-solid fa-map text-orange-500"></i> Tactical Map
+                                </h3>
+                                <span class="text-[10px] text-zinc-500 font-mono">1 Cell = 2 inches</span>
+                            </div>
+                            
+                            <!-- SVG Map Canvas Container -->
+                            <div id="svg-map-container" class="w-full aspect-[30/22] bg-zinc-900 rounded border border-zinc-800 overflow-hidden relative shadow-inner">
+                                <!-- SVG generated by JS -->
+                            </div>
+
+                            <div class="mt-3 flex items-center justify-around text-[11px] text-zinc-400 border-t border-zinc-800/80 pt-2 font-mono flex-wrap gap-2">
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-blue-600 inline-block"></span> Player A</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-600 inline-block"></span> Player B</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Objectives (VP)</span>
+                            </div>
+                        </div>
+
+                        <!-- Deployment Details Card -->
+                        <div class="bg-zinc-950/60 p-4 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-sm font-bold font-orbitron text-orange-400 flex items-center gap-2">
+                                <i class="fa-solid fa-location-crosshairs"></i> Drop Zones
+                            </h3>
+                            <div id="deployment-text" class="text-xs sm:text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Mission Mechanics, Rules & Objectives -->
+                    <div class="lg:col-span-7 flex flex-col gap-6">
+                        
+                        <!-- Objective & Scoring Block -->
+                        <div class="bg-zinc-950/80 p-5 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-base font-bold font-orbitron text-white flex items-center gap-2 border-b border-zinc-800 pb-2">
+                                <i class="fa-solid fa-trophy text-amber-500"></i> How to Score Victory Points (VP)
+                            </h3>
+                            <div id="scoring-text" class="text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                        <!-- Special Rules / AP Actions Block -->
+                        <div class="bg-zinc-950/80 p-5 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-base font-bold font-orbitron text-white flex items-center gap-2 border-b border-zinc-800 pb-2">
+                                <i class="fa-solid fa-bolt text-orange-500"></i> Special Actions & Mechanics
+                            </h3>
+                            <div id="mechanics-text" class="text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                        <!-- Why It Prevents Quick Matches (2-Turn Protection) -->
+                        <div class="bg-orange-950/30 border border-orange-900/50 p-4 rounded-xl space-y-2">
+                            <h4 class="text-xs font-bold font-orbitron text-orange-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved"></i> Game Pace
+                            </h4>
+                            <p id="pace-text" class="text-xs text-zinc-300 leading-relaxed">
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- All Missions Grid List -->
+        <section class="mt-12">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold font-orbitron text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-orange-500"></i> All Missions Database
+                </h3>
+                <span class="text-xs text-zinc-500 hidden sm:inline">Click on a mission to select manually</span>
+            </div>
+
+            <div id="missions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-zinc-950 border-t border-zinc-800 py-6 text-center text-xs text-zinc-500">
+        <div class="max-w-5xl mx-auto px-4">
+            <p class="font-orbitron text-zinc-400 mb-1">KILL TEAM MISSION GENERATOR by Dorecha</p>
+        </div>
+    </footer>
+
+    <!-- Script Block -->
+    <script></script>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
