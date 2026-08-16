@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#09090b;--panel:#18181b;--line:#3f3f46;--accent:#f97316;--muted:#a1a1aa}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f4f4f5;font:14px system-ui,sans-serif}button,input,select,textarea{font:inherit}button{background:#27272a;color:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}button.primary{background:var(--accent);border-color:#fb923c}button.active{outline:2px solid var(--accent)}
+header{padding:18px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#111114;z-index:5}h1{margin:0 0 4px;font-size:22px}p{color:var(--muted)}.layout{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1500px;margin:auto}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.field{margin-bottom:12px}.field label{display:block;color:#d4d4d8;font-size:12px;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;background:#09090b;color:#fff;border:1px solid var(--line);border-radius:8px;padding:8px}.field textarea{min-height:86px;resize:vertical}.tabs{display:flex;gap:6px;margin-bottom:14px}.tabs button{flex:1}.status{min-height:24px;margin-top:10px;color:#a7f3d0}.toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.toolbar button{padding:6px 9px;font-size:12px}.canvas-wrap{background:#09090b;border:1px solid var(--line);border-radius:10px;padding:12px}.canvas{width:100%;max-width:900px;aspect-ratio:300/220;display:block;background:#18181b;touch-action:none}.legend{display:flex;gap:14px;color:var(--muted);font-size:12px;margin-top:8px}.legend span{display:flex;align-items:center;gap:5px}.dot{width:11px;height:11px;border-radius:50%;display:inline-block}.blue{background:#2563eb}.red{background:#dc2626}.amber{background:#f59e0b}.small{font-size:12px;color:var(--muted)}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px}.mission-item{padding:9px;border-bottom:1px solid #27272a;cursor:pointer}.mission-item:last-child{border:0}.mission-item:hover{background:#27272a}.mission-item.active{background:#3f3f46}.top-actions{display:flex;justify-content:space-between;gap:10px;align-items:center}.danger{color:#fca5a5}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}.canvas{max-width:none}}
+</style>
+</head>
+<body>
+<header><div class="top-actions"><div><h1>MISSION STUDIO</h1><div class="small">Локальный редактор миссий и карт. Save пишет файлы прямо в репозиторий.</div></div><div class="row" style="max-width:300px"><button id="langRu" class="active">RU</button><button id="langEn">EN</button><button id="reload">Reload</button></div></div></header>
+<div class="layout">
+<section class="panel">
+  <div class="tabs"><button id="newBtn" class="primary">Новая миссия</button><button id="saveBtn" class="primary">Сохранить</button></div>
+  <div class="field"><label>Миссия</label><select id="missionSelect"></select></div>
+  <div class="split">
+    <div class="field"><label>ID</label><input id="id"></div>
+    <div class="field"><label>Категория</label><select id="category"><option value="basic">basic</option><option value="advanced">advanced</option></select></div>
+  </div>
+  <div class="field"><label>Заголовок</label><input id="title"></div>
+  <div class="field"><label>Подзаголовок</label><input id="subtitle"></div>
+  <div class="split">
+    <div class="field"><label>Название категории</label><input id="categoryName"></div>
+    <div class="field"><label>Тип расстановки</label><input id="type"></div>
+  </div>
+  <div class="field"><label>Deployment — можно использовать HTML</label><textarea id="deployment"></textarea></div>
+  <div class="field"><label>Scoring — можно использовать HTML</label><textarea id="scoring"></textarea></div>
+  <div class="field"><label>Mechanics — можно использовать HTML</label><textarea id="mechanics"></textarea></div>
+  <div class="field"><label>Темп игры</label><textarea id="pace"></textarea></div>
+  <div class="small">Совет: сначала сохрани миссию, затем собери для неё карту и нажми «Сохранить карту».</div>
+  <div id="status" class="status"></div>
+</section>
+
+<section class="panel">
+  <div class="top-actions"><div><h2 style="margin:0">Map Designer</h2><div class="small">300 × 220. Координаты привязаны к размеру SVG.</div></div><button id="saveMap" class="primary">Сохранить карту</button></div>
+  <div class="toolbar" style="margin-top:12px">
+    <button data-tool="select" class="active">Select</button>
+    <button data-tool="rectA">Зона A</button><button data-tool="rectB">Зона B</button>
+    <button data-tool="polygonA">Полигон A</button><button data-tool="polygonB">Полигон B</button>
+    <button data-tool="objective">Точка VP</button><button data-tool="obstacle">Объект</button><button data-tool="line">Линия</button><button data-tool="label">Текст</button>
+    <button id="finishPolygon">Finish polygon</button><button id="delete">Delete</button><button id="clearMap" class="danger">Clear map</button>
+  </div>
+  <div class="canvas-wrap"><svg id="canvas" class="canvas" viewBox="0 0 300 220"></svg></div>
+  <div class="legend"><span><i class="dot blue"></i> Игрок A</span><span><i class="dot red"></i> Игрок B</span><span><i class="dot amber"></i> VP / направляющие</span></div>
+  <div class="small" style="margin-top:10px">Для прямоугольников и линий зажми мышь и протяни. Для полигонов кликай по вершинам, затем Finish polygon. Для текста добавляется подпись с запросом.</div>
+</section>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const fields = ['id','title','subtitle','categoryName','type','deployment','scoring','mechanics','pace'];
+let content={ru:[],en:[],maps:{}}; let lang='ru'; let currentId=null; let map={zones:[],objectives:[],obstacles:[],lines:[],labels:[]}; let tool='select'; let selected=null; let drag=null; let polygon=[];
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function currentMissions(){return content[lang];}
+function nextId(){const nums=currentMissions().map(m=>/^m(\d+)$/.exec(m.id)?.[1]).filter(Boolean).map(Number); return 'm'+((nums.length?Math.max(...nums):0)+1);}
+function blankMission(){return {id:nextId(),title:'Новая миссия',subtitle:'',category:'basic',categoryName:lang==='ru'?'Базовая':'Basic',type:lang==='ru'?'Фронтальная':'Front',deployment:'<p><strong>Игрок А:</strong> ...</p><p><strong>Игрок Б:</strong> ...</p>',scoring:'<ul><li>1 VP: ...</li></ul>',mechanics:'<p><strong>Действие:</strong> ...</p>',pace:''};}
+function fill(m){fields.forEach(f=>$(f).value=m[f]??''); $('category').value=m.category||'basic';}
+function read(){const m={}; fields.forEach(f=>m[f]=$(f).value); m.category=$('category').value; return m;}
+function missionOptions(){const sel=$('missionSelect'); sel.innerHTML=''; currentMissions().forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=`${m.id} — ${m.title}`;sel.appendChild(o);});}
+function selectMission(id){currentId=id; const m=currentMissions().find(x=>x.id===id); if(m) fill(m); map=structuredClone(content.maps[id]||{zones:[],objectives:[],obstacles:[],lines:[],labels:[]}); selected=null; polygon=[]; renderMap();}
+function refresh(){missionOptions(); const m=currentMissions()[0]; if(m) selectMission(m.id); else {const n=blankMission(); currentId=n.id; fill(n); map={zones:[],objectives:[],obstacles:[],lines:[],labels:[]}; renderMap();}}
+function setLang(l){lang=l; $('langRu').classList.toggle('active',l==='ru');$('langEn').classList.toggle('active',l==='en');refresh();}
+function pos(evt){const r=$('canvas').getBoundingClientRect();return {x:(evt.clientX-r.left)/r.width*300,y:(evt.clientY-r.top)/r.height*220};}
+function hit(p){const all=[...map.zones.map((o,i)=>['zone',i,o]),...map.objectives.map((o,i)=>['objective',i,o]),...map.obstacles.map((o,i)=>['obstacle',i,o]),...map.lines.map((o,i)=>['line',i,o]),...map.labels.map((o,i)=>['label',i,o])]; for(let i=all.length-1;i>=0;i--){const [kind,idx,o]=all[i]; if(kind==='objective'&&Math.hypot(p.x-o.x,p.y-o.y)<10)return {kind,idx}; if(kind==='rect'||kind==='zone'||kind==='obstacle'){if(p.x>=o.x&&p.x<=o.x+o.w&&p.y>=o.y&&p.y<=o.y+o.h)return {kind,idx};} if(kind==='label'&&Math.abs(p.x-o.x)<25&&Math.abs(p.y-o.y)<12)return {kind,idx}; if(kind==='line'){const dx=o.x2-o.x1,dy=o.y2-o.y1;const t=Math.max(0,Math.min(1,((p.x-o.x1)*dx+(p.y-o.y1)*dy)/(dx*dx+dy*dy||1)));const q={x:o.x1+t*dx,y:o.y1+t*dy};if(Math.hypot(p.x-q.x,p.y-q.y)<6)return {kind,idx};}}
+ return null;}
+function renderMap(){const s=$('canvas');s.innerHTML=`<defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#27272a" stroke-width=".5"/></pattern></defs><rect width="300" height="220" fill="#18181b"/><rect width="300" height="220" fill="url(#g)"/>`+map.zones.map((z,i)=>z.kind==='polygon'?`<polygon data-k="zone" data-i="${i}" points="${z.points}" fill="${z.player==='A'?'#2563eb':'#dc2626'}" fill-opacity=".3" stroke="${z.player==='A'?'#3b82f6':'#ef4444'}" stroke-width="${selected?.kind==='zone'&&selected.idx===i?3:1.5}"/>`:`<rect data-k="zone" data-i="${i}" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" fill="${z.player==='A'?'#2563eb':'#dc2626'}" fill-opacity=".3" stroke="${z.player==='A'?'#3b82f6':'#ef4444'}" stroke-width="${selected?.kind==='zone'&&selected.idx===i?3:1.5}"/>`).join('')+map.obstacles.map((o,i)=>`<rect data-k="obstacle" data-i="${i}" x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" rx="4" fill="#27272a" stroke="${selected?.kind==='obstacle'&&selected.idx===i?'#fff':'#52525b'}" stroke-width="2"/><text x="${o.x+o.w/2}" y="${o.y+o.h/2+3}" fill="#a1a1aa" font-size="8" text-anchor="middle">${esc(o.label||'ОБЪЕКТ')}</text>`).join('')+map.lines.map((l,i)=>`<line data-k="line" data-i="${i}" x1="${l.x1}" y1="${l.y1}" x2="${l.x2}" y2="${l.y2}" stroke="#f59e0b" stroke-width="${selected?.kind==='line'&&selected.idx===i?3:1}" stroke-dasharray="4" opacity=".55"/>`).join('')+map.objectives.map((o,i)=>`<circle data-k="objective" data-i="${i}" cx="${o.x}" cy="${o.y}" r="${o.r||7}" fill="#f59e0b" stroke="#fff" stroke-width="${selected?.kind==='objective'&&selected.idx===i?3:1.5}"/><text x="${o.x}" y="${o.y+3}" fill="#18181b" font-size="7" font-weight="bold" text-anchor="middle">${esc(o.label||i+1)}</text>`).join('')+map.labels.map((l,i)=>`<text data-k="label" data-i="${i}" x="${l.x}" y="${l.y}" fill="#d4d4d8" font-size="${l.size||8}" text-anchor="middle" font-weight="bold">${esc(l.text)}</text>`).join('')+ (polygon.length?`<polyline points="${polygon.map(p=>`${p.x},${p.y}`).join(' ')}" fill="none" stroke="#f97316" stroke-width="2"/>`:'' );}
+function deleteSelected(){if(!selected)return; const a=map[selected.kind+'s']; if(a) a.splice(selected.idx,1); selected=null; renderMap();}
+$('missionSelect').onchange=e=>selectMission(e.target.value); $('langRu').onclick=()=>setLang('ru');$('langEn').onclick=()=>setLang('en');$('reload').onclick=load;
+$('newBtn').onclick=()=>{const n=blankMission();content[lang].push(n);missionOptions();selectMission(n.id);};
+$('saveBtn').onclick=async()=>{const m=read(); try{const r=await fetch('/api/mission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lang,mission:m})});const d=await r.json();if(!r.ok)throw Error(d.error);content[lang]=content[lang].filter(x=>x.id!==m.id).concat(m);currentId=m.id;missionOptions();$('missionSelect').value=m.id;$('status').textContent=`Миссия ${m.id} сохранена.`;}catch(e){$('status').textContent='Ошибка: '+e.message;}};
+$('saveMap').onclick=async()=>{if(!currentId)return; const r=await fetch('/api/map',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:currentId,map})});const d=await r.json();$('status').textContent=d.ok?`Карта ${currentId} сохранена.`:'Ошибка: '+d.error; content.maps[currentId]=structuredClone(map);};
+$('delete').onclick=deleteSelected; $('clearMap').onclick=()=>{map={zones:[],objectives:[],obstacles:[],lines:[],labels:[]};selected=null;polygon=[];renderMap();}; $('finishPolygon').onclick=()=>{if(polygon.length>=3){const player=tool==='polygonB'?'B':'A';map.zones.push({kind:'polygon',player,points:polygon.map(p=>`${Math.round(p.x)},${Math.round(p.y)}`).join(' ')});polygon=[];tool='select';setActiveTool();renderMap();}};
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;polygon=[];setActiveTool();}); function setActiveTool(){document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===tool));}
+$('canvas').addEventListener('pointerdown',e=>{const p=pos(e); if(tool==='select'){selected=hit(p);renderMap();return;} if(tool==='objective'){const label=prompt('Название/номер точки','');map.objectives.push({x:Math.round(p.x),y:Math.round(p.y),label:label||String(map.objectives.length+1)});renderMap();return;} if(tool==='label'){const text=prompt('Текст подписи','');if(text)map.labels.push({x:Math.round(p.x),y:Math.round(p.y),text});tool='select';setActiveTool();renderMap();return;} if(tool==='polygonA'||tool==='polygonB'){polygon.push(p);renderMap();return;} drag={tool,start:p}; $('canvas').setPointerCapture(e.pointerId);});
+$('canvas').addEventListener('pointermove',e=>{if(!drag)return; const p=pos(e); drag.current=p; renderMap(); const s=drag.start; if(drag.tool.startsWith('rect')){const x=Math.min(s.x,p.x),y=Math.min(s.y,p.y),w=Math.abs(p.x-s.x),h=Math.abs(p.y-s.y); const preview=drag.tool==='rectA'?'#2563eb':'#dc2626'; const existing=document.createElementNS('http://www.w3.org/2000/svg','rect'); existing.setAttribute('x',x);existing.setAttribute('y',y);existing.setAttribute('width',w);existing.setAttribute('height',h);existing.setAttribute('fill',preview);existing.setAttribute('fill-opacity','.15');existing.setAttribute('stroke',preview);existing.setAttribute('pointer-events','none');$('canvas').appendChild(existing);} });
+$('canvas').addEventListener('pointerup',e=>{if(!drag)return; const p=drag.current||pos(e),s=drag.start; if(drag.tool==='rectA'||drag.tool==='rectB'){const x=Math.min(s.x,p.x),y=Math.min(s.y,p.y),w=Math.abs(p.x-s.x),h=Math.abs(p.y-s.y);if(w>3&&h>3)map.zones.push({kind:'rect',player:drag.tool==='rectA'?'A':'B',x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),label:`Игрок ${drag.tool==='rectA'?'A':'B'}`});} else if(drag.tool==='obstacle'){const x=Math.min(s.x,p.x),y=Math.min(s.y,p.y),w=Math.abs(p.x-s.x),h=Math.abs(p.y-s.y);if(w>3&&h>3){const label=prompt('Название объекта','ОБЪЕКТ');map.obstacles.push({x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h),label:label||'ОБЪЕКТ'});}} else if(drag.tool==='line'){map.lines.push({x1:Math.round(s.x),y1:Math.round(s.y),x2:Math.round(p.x),y2:Math.round(p.y)});} drag=null;tool='select';setActiveTool();renderMap();});
+$('canvas').addEventListener('click',e=>{if(tool!=='select'||drag)return;const t=e.target;if(t?.dataset?.k)selected={kind:t.dataset.k,idx:Number(t.dataset.i)};renderMap();});
+async function load(){const r=await fetch('/api/content');content=await r.json();refresh();}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "kill-team-mission-generator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/mission-core.test.js",
+    "studio": "node tools/mission-studio-server.mjs"
+  }
+}
