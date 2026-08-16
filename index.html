@@ -74,7 +74,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <!-- Header -->
+   <!-- Header -->
     <header class="bg-zinc-900 border-b-2 border-orange-600 px-4 py-4 shadow-lg sticky top-0 z-50">
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
@@ -84,11 +84,25 @@
                     <p class="text-xs text-orange-400 font-semibold tracking-widest uppercase">Генератор Миссий</p>
                 </div>
             </div>
-            <!-- Filter buttons -->
-            <div class="flex items-center bg-zinc-800 p-1 rounded-lg border border-zinc-700">
-                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition text-white bg-orange-600">Все (12)</button>
-                <button onclick="setFilter('basic')" id="filter-basic" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Базовые</button>
-                <button onclick="setFilter('advanced')" id="filter-advanced" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Продвинутые</button>
+            
+            <!-- Обертка для фильтров и выбора языка -->
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+                
+                <!-- Filter buttons (существующие) -->
+                <div class="flex items-center bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                    <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition text-white bg-orange-600">Все (12)</button>
+                    <button onclick="setFilter('basic')" id="filter-basic" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Базовые</button>
+                    <button onclick="setFilter('advanced')" id="filter-advanced" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Продвинутые</button>
+                </div>
+
+                <!-- Language Switcher (Новый элемент) -->
+                <div class="flex items-center bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                    <!-- RU активна -->
+                    <a href="index.html" class="px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition text-white bg-orange-600 pointer-events-none">RU</a>
+                    <!-- EN неактивна -->
+                    <a href="en.html" class="px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">EN</a>
+                </div>
+
             </div>
         </div>
     </header>
