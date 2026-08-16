@@ -1,7 +1,7 @@
 import { filterMissions, randomMission, validateMissions } from './mission-core.js';
 import { missions as ruMissions } from './missions-ru.js';
 import { missions as enMissions } from './missions-en.js';
-import { renderSvgMap } from './maps.js';
+import { renderSvgMap } from './map-renderer.js';
 
 const language = document.documentElement.lang === 'en' ? 'en' : 'ru';
 const missions = language === 'en' ? enMissions : ruMissions;
