@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kill Team Mission Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f1115;
+            color: #e2e8f0;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .roulette-container {
+            perspective: 1000px;
+        }
+        .roulette-wheel {
+            transition: transform 3s cubic-bezier(0.15, 0.85, 0.35, 1.2);
+        }
+        .kt-border {
+            border: 2px solid #ea580c;
+        }
+        .kt-glow {
+            box-shadow: 0 0 15px rgba(234, 88, 12, 0.4);
+        }
+        .kt-glow-btn {
+            box-shadow: 0 0 20px rgba(234, 88, 12, 0.6);
+        }
+        .kt-glow-btn:hover {
+            box-shadow: 0 0 30px rgba(234, 88, 12, 0.9);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #181b20;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ea580c;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f97316;
+        }
+        .map-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8px;
+            fill: #71717a;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .roulette-spin {
+            animation: rollDown 0.1s linear infinite;
+            filter: blur(1px);
+        }
+        @keyframes rollDown {
+            0% { transform: translateY(-40%); opacity: 0; }
+            50% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(40%); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-zinc-900 border-b-2 border-orange-600 px-4 py-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-crosshairs text-orange-500 text-3xl animate-pulse"></i>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black font-orbitron text-white tracking-wider">KILL TEAM</h1>
+                    <p class="text-xs text-orange-400 font-semibold tracking-widest uppercase">Mission Generator</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row items-center gap-3">
+                <!-- Filter buttons -->
+                <div class="flex items-center bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                    <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition text-white bg-orange-600">All (12)</button>
+                    <button onclick="setFilter('basic')" id="filter-basic" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Basic</button>
+                    <button onclick="setFilter('advanced')" id="filter-advanced" class="filter-btn px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">Advanced</button>
+                </div>
+
+                <!-- Language Switcher -->
+                <div class="flex items-center bg-zinc-800 p-1 rounded-lg border border-zinc-700">
+                    <a href="index.html" class="px-3 py-1 text-xs sm:text-sm font-semibold text-zinc-400 hover:text-white rounded-md transition">RU</a>
+                    <a href="en.html" class="px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition text-white bg-orange-600 pointer-events-none">EN</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- Controls & Roulette Display -->
+        <section class="bg-zinc-900 rounded-xl p-6 mb-8 border border-zinc-800 kt-glow relative overflow-hidden text-center">
+            
+            <div class="mb-6">
+                <span id="mission-count-badge" class="inline-block bg-orange-950 text-orange-400 text-xs px-3 py-1 rounded-full border border-orange-800 font-mono mb-2">
+                    Available missions: 12
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-bold font-orbitron text-white">READY TO DEPLOY?</h2>
+                <p class="text-zinc-400 text-sm mt-1 max-w-lg mx-auto">
+                    Click the button below to start the random mission selection. Each mission features a unique deployment map and special rules.
+                </p>
+            </div>
+
+            <!-- Roulette Spinner Graphic / Text Box -->
+            <div class="relative max-w-md mx-auto my-6 bg-zinc-950 rounded-lg border-2 border-orange-600/50 p-6 shadow-inner min-h-[120px] flex items-center justify-center">
+                <div id="roulette-display" class="transition-all duration-300">
+                    <i class="fa-solid fa-dice text-4xl text-orange-500 mb-2 block"></i>
+                    <p class="text-zinc-400 font-orbitron text-sm">Click "SPIN THE ROULETTE"</p>
+                </div>
+            </div>
+
+            <!-- Spin Button -->
+            <div class="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="spin-btn" onclick="spinRoulette()" class="w-full sm:w-auto px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-black font-orbitron text-lg tracking-wider rounded-lg transition-all duration-200 transform active:scale-95 kt-glow-btn flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-rotate text-xl"></i>
+                    SPIN THE ROULETTE
+                </button>
+                <button onclick="getRandomMissionDirectly()" class="w-full sm:w-auto px-5 py-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold font-orbitron text-sm rounded-lg border border-zinc-700 transition">
+                    Quick Pick
+                </button>
+            </div>
+        </section>
+
+        <!-- Mission Details Container -->
+        <section id="mission-card" class="hidden transition-all duration-500">
+            <div class="bg-zinc-900 border-2 border-orange-600 rounded-xl overflow-hidden shadow-2xl">
+                
+                <!-- Mission Header -->
+                <div class="bg-gradient-to-r from-orange-950 via-zinc-900 to-zinc-900 p-6 border-b border-orange-600/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span id="mission-category" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-orange-600 text-white"></span>
+                            <span id="mission-type" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700"></span>
+                        </div>
+                        <h2 id="mission-title" class="text-2xl sm:text-3xl font-black font-orbitron text-white"></h2>
+                        <p id="mission-subtitle" class="text-orange-400 text-sm font-medium mt-0.5"></p>
+                    </div>
+                    <div class="flex items-center gap-2 mt-4 md:mt-0">
+                        <button onclick="scrollUpToSpin()" class="bg-zinc-800 hover:bg-zinc-700 text-orange-400 px-4 py-2 rounded-lg text-sm font-bold font-orbitron border border-zinc-700 transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrows-rotate"></i> Respin
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mission Body Grid -->
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <!-- Left Column: SVG Map & Deployment Info -->
+                    <div class="lg:col-span-5 flex flex-col gap-6">
+                        
+                        <!-- Deployment Visual SVG Map -->
+                        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-xs font-bold font-orbitron text-zinc-400 tracking-wider uppercase flex items-center gap-2">
+                                    <i class="fa-solid fa-map text-orange-500"></i> Tactical Map
+                                </h3>
+                                <span class="text-[10px] text-zinc-500 font-mono">1 Cell = 2 inches</span>
+                            </div>
+                            
+                            <!-- SVG Map Canvas Container -->
+                            <div id="svg-map-container" class="w-full aspect-[30/22] bg-zinc-900 rounded border border-zinc-800 overflow-hidden relative shadow-inner">
+                                <!-- SVG generated by JS -->
+                            </div>
+
+                            <div class="mt-3 flex items-center justify-around text-[11px] text-zinc-400 border-t border-zinc-800/80 pt-2 font-mono flex-wrap gap-2">
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-blue-600 inline-block"></span> Player A</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-600 inline-block"></span> Player B</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Objectives (VP)</span>
+                            </div>
+                        </div>
+
+                        <!-- Deployment Details Card -->
+                        <div class="bg-zinc-950/60 p-4 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-sm font-bold font-orbitron text-orange-400 flex items-center gap-2">
+                                <i class="fa-solid fa-location-crosshairs"></i> Drop Zones
+                            </h3>
+                            <div id="deployment-text" class="text-xs sm:text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Mission Mechanics, Rules & Objectives -->
+                    <div class="lg:col-span-7 flex flex-col gap-6">
+                        
+                        <!-- Objective & Scoring Block -->
+                        <div class="bg-zinc-950/80 p-5 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-base font-bold font-orbitron text-white flex items-center gap-2 border-b border-zinc-800 pb-2">
+                                <i class="fa-solid fa-trophy text-amber-500"></i> How to Score Victory Points (VP)
+                            </h3>
+                            <div id="scoring-text" class="text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                        <!-- Special Rules / AP Actions Block -->
+                        <div class="bg-zinc-950/80 p-5 rounded-xl border border-zinc-800 space-y-3">
+                            <h3 class="text-base font-bold font-orbitron text-white flex items-center gap-2 border-b border-zinc-800 pb-2">
+                                <i class="fa-solid fa-bolt text-orange-500"></i> Special Actions & Mechanics
+                            </h3>
+                            <div id="mechanics-text" class="text-sm text-zinc-300 leading-relaxed space-y-2">
+                            </div>
+                        </div>
+
+                        <!-- Why It Prevents Quick Matches (2-Turn Protection) -->
+                        <div class="bg-orange-950/30 border border-orange-900/50 p-4 rounded-xl space-y-2">
+                            <h4 class="text-xs font-bold font-orbitron text-orange-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved"></i> Game Pace
+                            </h4>
+                            <p id="pace-text" class="text-xs text-zinc-300 leading-relaxed">
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- All Missions Grid List -->
+        <section class="mt-12">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold font-orbitron text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-orange-500"></i> All Missions Database
+                </h3>
+                <span class="text-xs text-zinc-500 hidden sm:inline">Click on a mission to select manually</span>
+            </div>
+
+            <div id="missions-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-zinc-950 border-t border-zinc-800 py-6 text-center text-xs text-zinc-500">
+        <div class="max-w-5xl mx-auto px-4">
+            <p class="font-orbitron text-zinc-400 mb-1">KILL TEAM MISSION GENERATOR by Dorecha</p>
+        </div>
+    </footer>
+
+    <!-- Script Block -->
+    <script>
+        // --- MISSIONS DATABASE (12 Missions - Translated to English) ---
+        const missions = [
+            {
+                id: 'm1',
+                title: 'Diagonal Intercept',
+                subtitle: 'Corner deployment at maximum distance from the enemy',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Diagonal',
+                deployment: `
+                    <p><strong>Player A:</strong> Top LEFT corner of the board. Triangular drop zone 10" along the long edge and 10" along the short edge.</p>
+                    <p><strong>Player B:</strong> Bottom RIGHT corner. Triangular zone 10" x 10".</p>
+                    <p><strong>Distance between zones:</strong> ~25 inches. Direct fire on Turning Point 1 is impossible.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>4 Objectives:</strong> Placed along the central diagonal.</li>
+                        <li><strong>1 VP:</strong> For each active node at the end of the Turning Point (starting from TP 2).</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Action - Hack Node (1 AP):</strong> An objective does not grant points just for being present. An operative must be within 1" of the objective and spend 1 AP to hack it. After that, the objective is considered yours until the enemy recaptures it.</p>
+                `,
+                pace: 'Due to the diagonal deployment, the first Turning Point is entirely spent bringing up forces and maneuvering behind cover.'
+            },
+            {
+                id: 'm2',
+                title: 'Deep Breach',
+                subtitle: 'Narrow front from the short edges of the board',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Short Edge',
+                deployment: `
+                    <p><strong>Player A:</strong> Left short edge (22"). A strip <strong>6 inches</strong> wide.</p>
+                    <p><strong>Player B:</strong> Right short edge (22"). A strip <strong>6 inches</strong> wide.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> Control at least 1 objective on your half of the board.</li>
+                        <li><strong>1 VP:</strong> Control at least 1 objective on the enemy's half of the board.</li>
+                        <li><strong>2 VP:</strong> For controlling both objectives on the enemy's half of the board.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>The board is mentally divided in half. There is 1 objective in each quadrant. Points for objectives are awarded at the end of Turning Points 2, 3, and 4.</p>
+                `,
+                pace: 'To secure maximum points, players must push forward into enemy territory through a narrow corridor.'
+            },
+            {
+                id: 'm3',
+                title: 'Data Download',
+                subtitle: 'Mission with delayed scoring',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Frontal',
+                deployment: `
+                    <p><strong>Players A & B:</strong> Standard 6-inch strips along the long edges.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>TP 1:</strong> Objectives DO NOT grant Victory Points!</li>
+                        <li><strong>TP 2, 3, 4:</strong> 1 VP for each hacked terminal.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Download Data (1 AP):</strong> An operative must spend 1 AP near the terminal. If the enemy drives you away from the terminal, they do not need to spend AP — the objective automatically becomes theirs.</p>
+                `,
+                pace: 'The lack of scoring in the first Turning Point allows you to calmly establish a frontline and hack consoles before the main firefight begins.'
+            },
+            {
+                id: 'm4',
+                title: 'High-Value Cargo',
+                subtitle: 'Carrying heavy containers with debuffs',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Frontal',
+                deployment: `
+                    <p><strong>Players A & B:</strong> Opposite long edges of the board (6 inches).</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> For holding a crate at the end of the Turning Point.</li>
+                        <li><strong>3 VP:</strong> For delivering a crate to your drop zone and dropping it (<i>Drop</i> action for 1 AP).</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Pick up Cargo (1 AP):</strong> An operative picks up 1 of the 3 crates in the center.</p>
+                    <p><strong>Weight Penalty:</strong> An operative carrying cargo suffers -2" to Move and Charge, and <strong>CANNOT perform a Dash</strong>.</p>
+                `,
+                pace: 'Escort mechanics. Whoever carries the crate becomes slow and an easy target. You will have to protect them with the bodies of allies.'
+            },
+            {
+                id: 'm5',
+                title: 'Shifting Zone',
+                subtitle: 'Dynamically changing active objectives',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Frontal',
+                deployment: `
+                    <p><strong>Players A & B:</strong> Standard long zones (6 inches each).</p>
+                    <p>5 objectives: 2 closer to A, 1 in the Center, 2 closer to B.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>TP 1:</strong> Only the 4 outer objectives are active (1 VP each).</li>
+                        <li><strong>TP 2:</strong> ONLY the Central objective is active (2 VP).</li>
+                        <li><strong>TP 3:</strong> Objectives IN THE ENEMY zone are active (2 VP each).</li>
+                        <li><strong>TP 4:</strong> ALL objectives are active (1 VP each).</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>Capturing inactive objectives in the current Turning Point is pointless. You must constantly reposition to the required sector.</p>
+                `,
+                pace: 'Camping in the base won\'t work. You must plan your maneuvers so that you are near the newly active objective by the next turn.'
+            },
+            {
+                id: 'm6',
+                title: 'Bunker Assault',
+                subtitle: 'Narrow zones and a massive obstacle in the center',
+                category: 'basic',
+                categoryName: 'Basic',
+                type: 'Narrow Frontal',
+                deployment: `
+                    <p><strong>Players A & B:</strong> Narrow zones of only <strong>4 inches</strong> along the long edges.</p>
+                    <p>Prerequisite: A large building/bunker right in the center of the board blocking line of sight.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> For controlling objectives on the flanks outside the bunker.</li>
+                        <li><strong>2 VP:</strong> For controlling the central console inside the bunker.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>There is no direct line of sight from base to base. Capturing the central objective requires entering an enclosed space for close quarters combat.</p>
+                `,
+                pace: 'The solid central terrain completely eliminates wiping out squads through shooting. Close combat is inevitable.'
+            },
+            {
+                id: 'm7',
+                title: 'Line Control',
+                subtitle: 'Classic capture and hold of 4 objectives',
+                category: 'basic',
+                categoryName: 'Basic',
+                type: 'Frontal',
+                deployment: `
+                    <p><strong>Players A & B:</strong> Opposite long edges of the board (6 inches).</p>
+                    <p>4 objectives are placed in a diamond shape.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> Control 1 or more objectives at the end of the Turning Point.</li>
+                        <li><strong>1 VP:</strong> Control MORE objectives than your opponent.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>Control is determined by the number of models (sum of their APL) within 2" of the marker.</p>
+                `,
+                pace: 'A perfect balance of positional firefights. Great for learning the fundamentals of the game.'
+            },
+            {
+                id: 'm8',
+                title: 'King of the Hill',
+                subtitle: 'Uncompromising battle for the center',
+                category: 'basic',
+                categoryName: 'Basic',
+                type: 'Frontal',
+                deployment: `
+                    <p><strong>Players A & B:</strong> Opposite edges of the board (6 inches).</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>2 VP:</strong> To the player controlling the single central objective at the end of the Turning Point.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p>There is only one objective located exactly in the geometric center of the board. All shooting and charges will be directed there.</p>
+                `,
+                pace: 'A maximally aggressive and fast format. Whoever makes the best use of cover around the objective will win.'
+            },
+            {
+                id: 'm9',
+                title: 'Jamming Fields',
+                subtitle: 'Objectives act as anti-sniper jamming generators',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Checkered',
+                deployment: `
+                    <p><strong>Player A:</strong> Two 8x8 inch squares in the Top-Left and Bottom-Right corners of the board.</p>
+                    <p><strong>Player B:</strong> Two 8x8 inch squares in the Top-Right and Bottom-Left corners of the board.</p>
+                    <p>Your squads are initially split into two groups (Crossfire).</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> For controlling each objective (Generator) at the end of the Turning Point.</li>
+                        <li><strong>1 VP (Bonus):</strong> If you control more Generators than the opponent.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Jamming Aura (Passive):</strong> Any operative within 2" of ANY objective gains protection from ranged attacks. The enemy <strong>CANNOT</strong> shoot at this operative if the shooter is further than 6 inches away. Weapons with the <i>Blast</i> and <i>Indirect</i> rules ignore this.</p>
+                `,
+                pace: 'Shooting across the board is completely disabled. Only those who aren\'t afraid to get up close (within 6 inches) or engage in melee will survive.'
+            },
+            {
+                id: 'm10',
+                title: 'Asymmetric Sabotage',
+                subtitle: 'One defends the center, the other attacks from the corners',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Asymmetric',
+                deployment: `
+                    <p><strong>DEFENDER (Player A):</strong> A 10x10 inch square exactly in the center of the board.</p>
+                    <p><strong>ATTACKER (Player B):</strong> Two opposite corners of the board (8x8 inch triangles). The squad can be split into two parts.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>DEFENDER:</strong> Gains 1 VP at the end of the Turning Point for each UNDESTROYED generator (there are 3).</li>
+                        <li><strong>ATTACKER:</strong> Instantly gains 3 VP for each destroyed generator.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Plant Bomb (1 AP):</strong> The Attacker can plant a charge on a generator (within 1"). The charge explodes at the end of the NEXT Turning Point.</p>
+                    <p><strong>Defuse (1 AP):</strong> The Defender can spend AP to remove the charge before it detonates.</p>
+                `,
+                pace: 'A very tense thriller. The Defender has to cover all directions, while the Attacker coordinates simultaneous assaults from two flanks.'
+            },
+            {
+                id: 'm11',
+                title: 'Toxic Storm',
+                subtitle: 'Shrinking zone and mortal wounds on the edges',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Kill Zone',
+                deployment: `
+                    <p><strong>Players A & B:</strong> Standard long zones (6 inches each).</p>
+                    <p>4 objectives are grouped very close to the center of the board.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>1 VP:</strong> For controlling any objective.</li>
+                        <li><strong>1 VP:</strong> If you control more objectives than your opponent.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Shrinking Zone:</strong> At the end of Turning Point 2, any operative within 3" of ANY edge of the board suffers D3 mortal wounds. During Turning Points 3 and 4, this kill zone expands to 6" from the edges.</p>
+                `,
+                pace: 'Classic "Battle Royale" mechanics. By the third Turning Point, all surviving operatives will be forced to huddle in the center of the board at melee range.'
+            },
+            {
+                id: 'm12',
+                title: 'Shifting Front',
+                subtitle: 'Random activation of objectives each turn',
+                category: 'advanced',
+                categoryName: 'Advanced',
+                type: 'Diagonal',
+                deployment: `
+                    <p><strong>Players A & B:</strong> Diagonal deployment (10x10 inch corners).</p>
+                    <p><strong>6 numbered objectives</strong> (from 1 to 6) are scattered across the board.</p>
+                `,
+                scoring: `
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>2 VP:</strong> For controlling an objective active in this Turning Point.</li>
+                    </ul>
+                `,
+                mechanics: `
+                    <p><strong>Wandering Signal:</strong> At the start of EACH Turning Point, roll a D6 TWICE. The resulting numbers indicate the only two objectives that will yield points this round. The other 4 objectives become inactive dummies until the next roll.</p>
+                `,
+                pace: 'Utter chaos. It is impossible to sit in a static defense, as the required objective might activate on the other side of the board. Requires maximum squad flexibility.'
+            }
+        ];
+
+        // --- STATE VARIABLES ---
+        let currentFilter = 'all';
+        let isSpinning = false;
+        let selectedMission = null;
+
+        // --- FILTER LOGIC ---
+        function setFilter(filter) {
+            if (isSpinning) return;
+            currentFilter = filter;
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-orange-600', 'text-white');
+                btn.classList.add('text-zinc-400');
+            });
+            
+            const activeBtn = document.getElementById(`filter-${filter}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-orange-600', 'text-white');
+                activeBtn.classList.remove('text-zinc-400');
+            }
+
+            updateMissionCountBadge();
+            renderMissionsGrid();
+        }
+
+        function getFilteredMissions() {
+            if (currentFilter === 'all') return missions;
+            return missions.filter(m => m.category === currentFilter);
+        }
+
+        function updateMissionCountBadge() {
+            const list = getFilteredMissions();
+            document.getElementById('mission-count-badge').innerText = `Available missions: ${list.length}`;
+        }
+
+        // --- ROULETTE SPINNING LOGIC ---
+        function spinRoulette() {
+            if (isSpinning) return;
+
+            const list = getFilteredMissions();
+            if (list.length === 0) return;
+
+            isSpinning = true;
+            const spinBtn = document.getElementById('spin-btn');
+            const display = document.getElementById('roulette-display');
+
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            let counter = 0;
+            const totalSwaps = 25;
+            const speed = 80;
+
+            document.getElementById('mission-card').classList.add('hidden');
+
+            display.classList.add('roulette-spin');
+
+            const interval = setInterval(() => {
+                const randomTemp = list[Math.floor(Math.random() * list.length)];
+                
+                display.innerHTML = `
+                    <div>
+                        <span class="text-xs text-orange-500 font-bold uppercase tracking-widest">${randomTemp.type}</span>
+                        <h3 class="text-xl font-black font-orbitron text-white">${randomTemp.title}</h3>
+                    </div>
+                `;
+
+                counter++;
+                if (counter >= totalSwaps) {
+                    clearInterval(interval);
+                    
+                    display.classList.remove('roulette-spin');
+
+                    const finalMission = list[Math.floor(Math.random() * list.length)];
+                    selectedMission = finalMission;
+
+                    display.innerHTML = `
+                        <div class="scale-105 transition-transform">
+                            <span class="text-xs bg-orange-600 text-white font-bold px-2 py-0.5 rounded uppercase tracking-widest">${finalMission.categoryName}</span>
+                            <h3 class="text-2xl font-black font-orbitron text-orange-400 mt-1">${finalMission.title}</h3>
+                            <p class="text-xs text-zinc-400 mt-1">${finalMission.subtitle}</p>
+                        </div>
+                    `;
+
+                    renderMissionDetails(finalMission);
+
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                    setTimeout(() => {
+                        document.getElementById('mission-card').scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
+                }
+            }, speed);
+        }
+        
+        function getRandomMissionDirectly() {
+            if (isSpinning) return;
+            const list = getFilteredMissions();
+            const finalMission = list[Math.floor(Math.random() * list.length)];
+            selectedMission = finalMission;
+            
+            document.getElementById('roulette-display').innerHTML = `
+                <div>
+                    <span class="text-xs bg-orange-600 text-white font-bold px-2 py-0.5 rounded uppercase tracking-widest">${finalMission.categoryName}</span>
+                    <h3 class="text-2xl font-black font-orbitron text-orange-400 mt-1">${finalMission.title}</h3>
+                    <p class="text-xs text-zinc-400 mt-1">${finalMission.subtitle}</p>
+                </div>
+            `;
+            renderMissionDetails(finalMission);
+            document.getElementById('mission-card').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function selectMissionById(id) {
+            const m = missions.find(x => x.id === id);
+            if (m) {
+                selectedMission = m;
+                document.getElementById('roulette-display').innerHTML = `
+                    <div>
+                        <span class="text-xs bg-orange-600 text-white font-bold px-2 py-0.5 rounded uppercase tracking-widest">${m.categoryName}</span>
+                        <h3 class="text-2xl font-black font-orbitron text-orange-400 mt-1">${m.title}</h3>
+                        <p class="text-xs text-zinc-400 mt-1">${m.subtitle}</p>
+                    </div>
+                `;
+                renderMissionDetails(m);
+                document.getElementById('mission-card').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function scrollUpToSpin() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- RENDER MISSION DETAILS ---
+        function renderMissionDetails(m) {
+            document.getElementById('mission-title').innerText = m.title;
+            document.getElementById('mission-subtitle').innerText = m.subtitle;
+            document.getElementById('mission-category').innerText = m.categoryName;
+            document.getElementById('mission-type').innerText = m.type + ' DEPLOYMENT';
+            
+            document.getElementById('deployment-text').innerHTML = m.deployment;
+            document.getElementById('scoring-text').innerHTML = m.scoring;
+            document.getElementById('mechanics-text').innerHTML = m.mechanics;
+            document.getElementById('pace-text').innerText = m.pace;
+
+            renderSvgMap(m.id);
+            document.getElementById('mission-card').classList.remove('hidden');
+        }
+
+        // --- GENERATE EXACT SVG MAPS FOR EACH MISSION ---
+        function renderSvgMap(missionId) {
+            const container = document.getElementById('svg-map-container');
+            
+            const grid = `
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#27272a" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                <text x="150" y="10" class="map-label" text-anchor="middle">30 INCHES (LONG EDGE)</text>
+                <text x="-110" y="10" class="map-label" transform="rotate(-90)" text-anchor="middle">22 INCHES</text>
+            `;
+
+            let innerSvg = '';
+
+            switch (missionId) {
+                case 'm1': 
+                    innerSvg = `
+                        <polygon points="0,0 100,0 0,100" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="25" y="35" fill="#93c5fd" font-size="10" font-weight="bold">Player A</text>
+                        <polygon points="300,220 200,220 300,120" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="240" y="195" fill="#fca5a5" font-size="10" font-weight="bold">Player B</text>
+                        <circle cx="70" cy="150" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="123" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="177" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="230" cy="70" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm2': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="60" height="220" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="30" y="115" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle" transform="rotate(-90 30,115)">Player A (6")</text>
+                        <rect x="240" y="0" width="60" height="220" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="270" y="115" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle" transform="rotate(-90 270,115)">Player B (6")</text>
+                        <line x1="150" y1="0" x2="150" y2="220" stroke="#f59e0b" stroke-dasharray="4" opacity="0.3" stroke-width="1"/>
+                        <circle cx="100" cy="60" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="100" cy="160" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="200" cy="60" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="200" cy="160" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm3': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Player A (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Player B (6")</text>
+                        <circle cx="100" cy="90" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="200" cy="90" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="100" cy="130" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="200" cy="130" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm4': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Player A (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Player B (6")</text>
+                        <line x1="0" y1="110" x2="300" y2="110" stroke="#f59e0b" stroke-dasharray="4" opacity="0.3" stroke-width="1"/>
+                        <rect x="70" y="105" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="145" y="105" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="220" y="105" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm5': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Player A (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Player B (6")</text>
+                        <circle cx="90" cy="80" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="210" cy="80" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="110" r="9" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+                        <circle cx="90" cy="140" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="210" cy="140" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm6': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="40" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="25" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Player A (Narrow 4")</text>
+                        <rect x="0" y="180" width="300" height="40" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="205" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Player B (Narrow 4")</text>
+                        <rect x="110" y="70" width="80" height="80" fill="#27272a" stroke="#52525b" stroke-width="2" rx="4"/>
+                        <text x="150" y="105" fill="#71717a" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle">BUNKER</text>
+                        <circle cx="60" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="125" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="240" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm7': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Player A (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Player B (6")</text>
+                        <circle cx="90" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="75" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="145" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="210" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm8': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Player A (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Player B (6")</text>
+                        <circle cx="150" cy="110" r="10" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+                        <circle cx="150" cy="110" r="4" fill="#fff" />
+                    `;
+                    break;
+                case 'm9': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="80" height="80" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="40" y="45" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">A</text>
+                        <rect x="220" y="140" width="80" height="80" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="260" y="185" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">A</text>
+                        
+                        <rect x="220" y="0" width="80" height="80" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="260" y="45" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">B</text>
+                        <rect x="0" y="140" width="80" height="80" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="40" y="185" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">B</text>
+
+                        <circle cx="150" cy="70" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="150" cy="150" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="110" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="190" cy="110" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        
+                        <circle cx="150" cy="70" r="25" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+                        <circle cx="150" cy="150" r="25" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+                        <circle cx="110" cy="110" r="25" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+                        <circle cx="190" cy="110" r="25" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+                    `;
+                    break;
+                case 'm10': 
+                    innerSvg = `
+                        <rect x="100" y="60" width="100" height="100" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="115" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">DEFENDER</text>
+                        
+                        <polygon points="0,0 80,0 0,80" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="25" y="25" fill="#fca5a5" font-size="9" font-weight="bold">ATTACK</text>
+                        <polygon points="300,220 220,220 300,140" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="255" y="200" fill="#fca5a5" font-size="9" font-weight="bold">ATTACK</text>
+
+                        <rect x="115" y="75" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="175" y="75" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="145" y="135" width="10" height="10" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm11': 
+                    innerSvg = `
+                        <rect x="0" y="0" width="300" height="60" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="150" y="35" fill="#93c5fd" font-size="10" font-weight="bold" text-anchor="middle">Player A (6")</text>
+                        <rect x="0" y="160" width="300" height="60" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="150" y="195" fill="#fca5a5" font-size="10" font-weight="bold" text-anchor="middle">Player B (6")</text>
+                        
+                        <rect x="30" y="30" width="240" height="160" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="8 4"/>
+                        <text x="150" y="55" fill="#ef4444" font-size="9" font-weight="bold" text-anchor="middle">KILL ZONE (from TP 3)</text>
+
+                        <circle cx="130" cy="95" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="170" cy="95" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="130" cy="125" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="170" cy="125" r="7" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+                    `;
+                    break;
+                case 'm12': 
+                    innerSvg = `
+                        <polygon points="0,0 100,0 0,100" fill="#2563eb" fill-opacity="0.3" stroke="#3b82f6" stroke-width="1.5"/>
+                        <text x="25" y="35" fill="#93c5fd" font-size="10" font-weight="bold">Player A</text>
+                        <polygon points="300,220 200,220 300,120" fill="#dc2626" fill-opacity="0.3" stroke="#ef4444" stroke-width="1.5"/>
+                        <text x="240" y="195" fill="#fca5a5" font-size="10" font-weight="bold">Player B</text>
+                        
+                        <circle cx="80" cy="170" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="80" y="173" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">1</text>
+                        
+                        <circle cx="70" cy="70" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="70" y="73" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">2</text>
+                        
+                        <circle cx="150" cy="110" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="150" y="113" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">3</text>
+                        
+                        <circle cx="230" cy="150" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="230" y="153" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">4</text>
+                        
+                        <circle cx="220" cy="50" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="220" y="53" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">5</text>
+                        
+                        <circle cx="150" cy="30" r="9" fill="#f59e0b" stroke="#fff" stroke-width="1"/>
+                        <text x="150" y="33" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">6</text>
+                    `;
+                    break;
+            }
+
+            container.innerHTML = `<svg viewBox="0 0 300 220" class="w-full h-full">${grid}${innerSvg}</svg>`;
+        }
+
+        // --- RENDER ALL MISSIONS LIST ---
+        function renderMissionsGrid() {
+            const grid = document.getElementById('missions-grid');
+            const list = getFilteredMissions();
+
+            grid.innerHTML = list.map(m => `
+                <div onclick="selectMissionById('${m.id}')" class="bg-zinc-900 border border-zinc-800 hover:border-orange-500 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:-translate-y-1 group flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${m.category === 'advanced' ? 'bg-orange-950 text-orange-400 border border-orange-800' : 'bg-zinc-800 text-zinc-300'}">
+                            ${m.categoryName}
+                        </span>
+                        <span class="text-[10px] text-zinc-500 font-mono">${m.type}</span>
+                    </div>
+                    <h4 class="text-base font-bold font-orbitron text-white group-hover:text-orange-400 transition">${m.title}</h4>
+                    <p class="text-xs text-zinc-400 mt-1 flex-grow">${m.subtitle}</p>
+                </div>
+            `).join('');
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            updateMissionCountBadge();
+            renderMissionsGrid();
+        };
+    </script>
+</body>
+</html>
