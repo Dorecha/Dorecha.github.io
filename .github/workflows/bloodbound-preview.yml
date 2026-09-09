@@ -20,18 +20,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Patch menu input handling
+      - name: Patch BLOODBOUND mobile menu
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('bloodbound/index.html')
           s = p.read_text(encoding='utf-8')
           old = "p.on('pointerdown',()=>this.start())"
-          new = "p.on('pointerdown',()=>this.start());this.input.on('pointerdown',e=>{if(this.state==='MENU'&&e.x>W*.30&&e.x<W*.70&&e.y>H*.45&&e.y<H*.62)this.start()});this.input.keyboard.on('keydown-ENTER',()=>{if(this.state==='MENU')this.start()});this.input.keyboard.on('keydown-SPACE',()=>{if(this.state==='MENU')this.start()})"
           if old not in s:
               raise SystemExit('BLOODBOUND menu handler signature not found')
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          s = s.replace(old, "window.__bbStart=()=>this.start();p.on('pointerdown',()=>this.start())", 1)
+          marker = '<div id="g"></div>'
+          overlay = '''<div id="bb-touch-play" style="position:fixed;left:50%;top:54%;transform:translate(-50%,-50%);z-index:99999;padding:14px 30px;border:2px solid #b5363b;background:#202936;color:#ddd7ca;font:700 30px monospace;letter-spacing:2px;border-radius:4px;touch-action:manipulation;user-select:none;-webkit-user-select:none">[ PLAY ]</div><script>(function(){const b=document.getElementById('bb-touch-play');const sync=()=>{b.style.display=window.__bbStart?'block':'none'};const go=e=>{e.preventDefault();e.stopPropagation();if(window.__bbStart){window.__bbStart();b.style.display='none'}};b.addEventListener('pointerdown',go,{passive:false});b.addEventListener('touchstart',go,{passive:false});setInterval(sync,100);sync()})();</script>'''
+          if marker not in s:
+              raise SystemExit('BLOODBOUND mount marker not found')
+          s = s.replace(marker, marker + overlay, 1)
+          p.write_text(s, encoding='utf-8')
           PY
+      - name: Validate generated page
+        run: |
+          test -s bloodbound/index.html
+          grep -q '__bbStart' bloodbound/index.html
+          grep -q 'bb-touch-play' bloodbound/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
