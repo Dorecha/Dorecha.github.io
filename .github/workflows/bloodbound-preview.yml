@@ -20,6 +20,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Patch menu input handling
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('bloodbound/index.html')
+          s = p.read_text(encoding='utf-8')
+          old = "p.on('pointerdown',()=>this.start())"
+          new = "p.on('pointerdown',()=>this.start());this.input.on('pointerdown',e=>{if(this.state==='MENU'&&e.x>W*.30&&e.x<W*.70&&e.y>H*.45&&e.y<H*.62)this.start()});this.input.keyboard.on('keydown-ENTER',()=>{if(this.state==='MENU')this.start()});this.input.keyboard.on('keydown-SPACE',()=>{if(this.state==='MENU')this.start()})"
+          if old not in s:
+              raise SystemExit('BLOODBOUND menu handler signature not found')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
