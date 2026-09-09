@@ -1,0 +1,59 @@
+name: BLOODBOUND Pages
+on:
+  push:
+    branches:
+      - agent/mission-studio-v2
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: bloodbound-pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Patch BLOODBOUND startup and mobile menu
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('bloodbound/index.html')
+          s = p.read_text(encoding='utf-8')
+          old = "p.on('pointerdown',()=>this.start())"
+          if old not in s:
+              raise SystemExit('BLOODBOUND menu handler signature not found')
+          s = s.replace(old, "window.__bbStart=()=>this.start();p.on('pointerdown',()=>this.start())", 1)
+          old = "this.physics.add.collider(e,this.ground)"
+          new = "for(let g of this.ground)this.physics.add.collider(e,g)"
+          if old in s:
+              s = s.replace(old, new, 1)
+          s = s.replace('this.scene.P.steel','this.scene.P.s')
+          s = s.replace('C.steel','C.s')
+          marker = '<div id="g"></div>'
+          overlay = '''<div id="bb-touch-play" style="position:fixed;left:50%;top:54%;transform:translate(-50%,-50%);z-index:99999;min-width:190px;padding:12px 22px;border:2px solid #b5363b;background:#202936;color:#ddd7ca;font:700 30px monospace;letter-spacing:2px;text-align:center;border-radius:4px;touch-action:manipulation;user-select:none;-webkit-user-select:none">[ PLAY ]</div><div id="bb-error" style="display:none;position:fixed;left:5%;right:5%;top:15%;z-index:100000;padding:18px;background:#180b0d;color:#ffb3b3;border:2px solid #b5363b;font:16px monospace;white-space:pre-wrap;word-break:break-word"></div><script>(function(){const b=document.getElementById('bb-touch-play'),e=document.getElementById('bb-error');const show=x=>{e.style.display='block';e.textContent='BLOODBOUND STARTUP ERROR\\n\\n'+x};window.addEventListener('error',x=>show((x.error&&x.error.stack)||x.message||String(x)));window.addEventListener('unhandledrejection',x=>show(String(x.reason&&x.reason.stack||x.reason)));const go=x=>{x.preventDefault();x.stopPropagation();try{if(window.__bbStart)window.__bbStart()}catch(err){show(err&&err.stack||err);return}b.style.display='none'};b.addEventListener('pointerup',go,{passive:false});b.addEventListener('touchend',go,{passive:false});b.addEventListener('click',go);setInterval(()=>{b.style.display=window.__bbStart?'block':'none'},200)})();</script>'''
+          if marker not in s:
+              raise SystemExit('BLOODBOUND mount marker not found')
+          s = s.replace(marker, marker + overlay, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Validate generated page
+        run: |
+          test -s bloodbound/index.html
+          grep -q '__bbStart' bloodbound/index.html
+          grep -q 'bb-error' bloodbound/index.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
