@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Patch BLOODBOUND mobile menu
+      - name: Patch BLOODBOUND startup and mobile menu
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -30,8 +30,15 @@ jobs:
           if old not in s:
               raise SystemExit('BLOODBOUND menu handler signature not found')
           s = s.replace(old, "window.__bbStart=()=>this.start();p.on('pointerdown',()=>this.start())", 1)
+          old = "this.physics.add.collider(e,this.ground)"
+          new = "for(let g of this.ground)this.physics.add.collider(e,g)"
+          if old not in s:
+              raise SystemExit('BLOODBOUND enemy collider signature not found')
+          s = s.replace(old, new, 1)
+          s = s.replace('this.scene.P.steel','this.scene.P.s')
+          s = s.replace('C.steel','C.s')
           marker = '<div id="g"></div>'
-          overlay = '''<div id="bb-touch-play" style="position:fixed;left:50%;top:54%;transform:translate(-50%,-50%);z-index:99999;padding:14px 30px;border:2px solid #b5363b;background:#202936;color:#ddd7ca;font:700 30px monospace;letter-spacing:2px;border-radius:4px;touch-action:manipulation;user-select:none;-webkit-user-select:none">[ PLAY ]</div><script>(function(){const b=document.getElementById('bb-touch-play');const sync=()=>{b.style.display=window.__bbStart?'block':'none'};const go=e=>{e.preventDefault();e.stopPropagation();if(window.__bbStart){window.__bbStart();b.style.display='none'}};b.addEventListener('pointerdown',go,{passive:false});b.addEventListener('touchstart',go,{passive:false});setInterval(sync,100);sync()})();</script>'''
+          overlay = '''<div id="bb-touch-play" style="position:fixed;left:50%;top:54%;transform:translate(-50%,-50%);z-index:99999;padding:14px 30px;border:2px solid #b5363b;background:#202936;color:#ddd7ca;font:700 30px monospace;letter-spacing:2px;border-radius:4px;touch-action:manipulation;user-select:none;-webkit-user-select:none">[ PLAY ]</div><script>(function(){const b=document.getElementById('bb-touch-play');const sync=()=>{b.style.display=window.__bbStart?'block':'none'};const go=e=>{e.preventDefault();e.stopPropagation();if(window.__bbStart){window.__bbStart();b.style.display='none'}};b.addEventListener('pointerdown',go,{passive:false});b.addEventListener('touchstart',go,{passive:false});b.addEventListener('click',go);setInterval(sync,100);sync()})();</script>'''
           if marker not in s:
               raise SystemExit('BLOODBOUND mount marker not found')
           s = s.replace(marker, marker + overlay, 1)
@@ -41,7 +48,7 @@ jobs:
         run: |
           test -s bloodbound/index.html
           grep -q '__bbStart' bloodbound/index.html
-          grep -q 'bb-touch-play' bloodbound/index.html
+          grep -q 'for(let g of this.ground)this.physics.add.collider(e,g)' bloodbound/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
